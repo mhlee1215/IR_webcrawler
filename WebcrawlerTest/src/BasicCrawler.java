@@ -22,6 +22,7 @@ import edu.uci.ics.crawler4j.crawler.WebCrawler;
 import edu.uci.ics.crawler4j.parser.HtmlParseData;
 import edu.uci.ics.crawler4j.url.WebURL;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -112,8 +113,12 @@ public class BasicCrawler extends WebCrawler {
 
 			webContent.setTextLength(text.length());
 			webContent.setHtmlLength(html.length());
+			
 			webContent.setText(text);
 			webContent.setHtml(html);
+			
+			String[] stParts = text.trim().split("[^a-zA-Z0-9]");
+			webContent.setWordcount(stParts.length);
 			webContent.setOutgoingLink(links.size());
 
 		}
@@ -154,9 +159,10 @@ public class BasicCrawler extends WebCrawler {
 					"'"+content.getAnchor()+"',"+
 					""+content.getTextLength()+","+
 					""+content.getHtmlLength()+","+
-					""+content.getOutgoingLink()+","+
+					""+content.getWordcount()+","+
 					"'"+content.getText()+"',"+
-					"'"+content.getHtml()+"'"+
+					"'"+content.getHtml()+"',"+
+					""+content.getOutgoingLink()+""+
 					")";
 
 			//System.out.println(insertSQL);
@@ -242,6 +248,8 @@ public class BasicCrawler extends WebCrawler {
 		
 		return isAlreadyVisited;
 	}
+	
+	
 	
 	public static void main(String[] args){
 		String href = "http://aaaa/?alskdjfalk=10";
