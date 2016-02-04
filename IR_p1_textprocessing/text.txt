@@ -1,0 +1,62 @@
+apple ppale elppa
+Remember that in C, strings are nothing more than a character array followed
+by a '\0' character.  So you should always think of strings in this way.
+
+
+strtok is a string tokenizer, which, like fgets, is general functionality
+provided in some way by pretty much every programming language.  The 
+idea is that you tell the tokenizer what string you want to split up
+and by what delimiters you want it split up, and it will give you each
+token.  There were several new vocabulary words in that sentence, so 
+let me give you a concrete example.
+
+"This is a sentence, and I want to read only the words from this sentence.\n"
+
+In the above case, the delimiters are spaces, commas, periods, and \n.
+In the above case, the tokens are "this", "is", "a", "sentence", etc.  Each
+word is a token.
+
+So the job of the string tokenizer is to, given the knowledge that you want
+it to split by commands, periods, spaces, and \n, give you, in sequence,
+the different words.
+
+It could give you an array of all the words, but it doesn't allocate space.
+You would need to give it that array for it to fill in, and you don't know
+how many tokens there are, so that's no good.
+
+Instead, strtok splits this up into different calls.  The first call, you 
+give it the string and the delimiters.  In all the other calls, if you 
+want it to continue giving you tokens from the same original string, then 
+you give NULL as the first input argument.  You still give delimiters.
+
+Let's take the above example and use strtok to split it up.
+
+Oh - and don't forget to #include <string.h> for this!
+
+char string[] = "This is a sentence, and I want to read only the words from this sentence.\n";
+
+char *tokenPtr;
+
+// initialize the string tokenizer and receive pointer to first token
+tokenPtr = strtok(string, " ,.\n");
+while(tokenPtr != NULL)
+{
+	printf("%s\n",tokenPtr);
+	tokenPtr = strtok(NULL, " ,.\n");
+}
+
+A few things to note:
+1) Notice the difference between the first strtok call and the second
+2) Notice the order - we call it first, then we check the response in the 
+while, then we process it, then we call again at the end of the loop.
+Some might think we should call strtok as the first instruction in the loop
+and then process as the second.  But since we need to check it in between,
+and this is the condition for our while loop, we end up with a different
+order.
+3) strtok alters the original string.  tokenPtr is not pointing to things
+in a new place.  No new memory is allocated.  Instead, tokenPtr points to 
+locations inside the original string, and the original string has been changed.
+At the end of this, the original string looks like:
+"This\0is\0a\0sentence\0 and\0I\0want\0to\0read\0only\0the\0words\0from\0this\0sentence\0\n";
+
+
