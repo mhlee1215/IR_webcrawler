@@ -15,9 +15,18 @@ public class WebContent {
 	String anchor;
 	int textLength;
 	int htmlLength;
+	int wordcount;
 	String text;
 	String html;
 	int outgoingLink;
+
+	
+	public int getWordcount() {
+		return wordcount;
+	}
+	public void setWordcount(int wordcount) {
+		this.wordcount = wordcount;
+	}
 	public int getDocid() {
 		return docid;
 	}
