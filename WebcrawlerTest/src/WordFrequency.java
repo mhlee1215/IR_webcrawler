@@ -231,6 +231,68 @@ public class WordFrequency {
 
 		return wordFrequency;
 	}
+	
+	public static void updateWordCount(List<String> stopWords){
+		
+		int maxRow = getTotalSize();
+		int step = 10000;
+
+		Connection connection = null;
+		try
+		{
+			// create a database connection
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(30);  // set timeout to 30 sec.
+			Statement statement2 = connection.createStatement();
+			statement2.setQueryTimeout(30);  // set timeout to 30 sec.
+
+			for(int i = 0 ; i < maxRow ; i+=step){
+				String curQuery = "select id, text from webContents limit "+step+" offset "+i;
+				System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+				while(rs.next())
+				{
+					// read the result set
+					int id = rs.getInt("id");
+					String text = rs.getString("text");
+					//String[] textParts = text.trim().toLowerCase().split("\\s");
+					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
+					List<String> trimedList = new ArrayList<String>();
+					for(int j = 0 ; j < textParts.length ; j++){
+						String curStr = textParts[j].trim(); 
+						if(curStr.length() > 1) trimedList.add(curStr);
+					}
+					
+					String updateQuery = "update webContents set wordcount = "+trimedList.size()+" where id = "+id;
+					//System.out.println(updateQuery);
+					statement2.executeUpdate(updateQuery);
+					
+				}	
+			}
+
+
+		}
+		catch(SQLException e)
+		{
+			// if the error message is "out of memory", 
+			// it probably means no database file is found
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null)
+					connection.close();
+			}
+			catch(SQLException e)
+			{
+				// connection close failed.
+				System.err.println(e);
+			}
+		}
+	}
 
 	public static void print(Map<String, Integer> wordFrequencies){
 		int j = 0;
@@ -277,15 +339,17 @@ public class WordFrequency {
 //		System.out.println(stopWords);
 //		System.out.println(getTotalSize());
 		
-		int nGram = 0;
+		updateWordCount(stopWords);
 		
-		nGram =1;
-		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
-		pushWordFrequency(wf, nGram);
-		
-		nGram =3;
-		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
-		pushWordFrequency(wf3, nGram);
+//		int nGram = 0;
+//		
+//		nGram =1;
+//		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
+//		pushWordFrequency(wf, nGram);
+//		
+//		nGram =3;
+//		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
+//		pushWordFrequency(wf3, nGram);
 		//print(wf);
 	}
 
