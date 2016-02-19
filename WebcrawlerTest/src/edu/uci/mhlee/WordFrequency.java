@@ -28,25 +28,7 @@ public class WordFrequency {
 
 
 
-	public static List<String> readStopWords(String textFile){
-		List<String> stopWords = new ArrayList<String>();
-
-		String currentLine = null;
-		try{
-			FileReader fr = new FileReader(textFile);
-			BufferedReader br = new BufferedReader(fr);
-			int j = 0;
-			while((currentLine = br.readLine()) != null){
-				stopWords.add(currentLine.trim());
-			}
-			br.close();
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-
-		return stopWords;
-	}
-
+	
 	
 
 	public static void pushWordFrequency(Map<String, Integer> wordFrequency, int nGram){
@@ -269,7 +251,7 @@ public class WordFrequency {
 		//		
 		//		if(1==1) return;
 
-		List<String> stopWords = readStopWords("stopwords.txt");
+		List<String> stopWords = Utils.readStopWords("stopwords.txt");
 //		System.out.println(stopWords);
 //		System.out.println(getTotalSize());
 		

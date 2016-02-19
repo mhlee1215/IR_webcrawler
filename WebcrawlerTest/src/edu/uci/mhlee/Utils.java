@@ -1,4 +1,7 @@
 package edu.uci.mhlee;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -31,4 +34,24 @@ public class Utils {
 		}
 		return result;
 	} 
+	
+	public static List<String> readStopWords(String textFile){
+		List<String> stopWords = new ArrayList<String>();
+
+		String currentLine = null;
+		try{
+			FileReader fr = new FileReader(textFile);
+			BufferedReader br = new BufferedReader(fr);
+			int j = 0;
+			while((currentLine = br.readLine()) != null){
+				stopWords.add(currentLine.trim());
+			}
+			br.close();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return stopWords;
+	}
+
 }
