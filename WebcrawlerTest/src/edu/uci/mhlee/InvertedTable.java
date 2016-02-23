@@ -25,7 +25,7 @@ public class InvertedTable {
 	
 	public static Map<String, Map<Integer, Integer>> computeInvertedIndex(int nGram, List<String> stopWords){
 		Map<String, Map<Integer, Integer>> invertedIndex = new HashMap<String, Map<Integer, Integer>>();
-		int maxRow = DBUtils.getTotalSize();
+		int maxRow = 100;//DBUtils.getTotalSize();
 		int step = 1000;
 
 		Connection connection = null;
@@ -174,26 +174,37 @@ public class InvertedTable {
 		}
 	}
 
-	
+	public static void printInvertedIndex(Map<String, Map<Integer, Integer>> invertedIndex){
+		for(String word : invertedIndex.keySet()){
+			System.out.println(word);
+			for(Integer docId : invertedIndex.get(word).keySet()){
+				System.out.println("\t"+"docId: "+docId+", TF"+invertedIndex.get(word).get(docId));
+			}
+			System.out.println("");
+		}
+	}
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		
 		
 		List<String> stopWords = Utils.readStopWords("stopwords.txt");
-		long startTime = System.currentTimeMillis();
-		for(int i = 1 ; i <= 3 ; i++){
-			Map<String, Map<Integer, Integer>> invertedIndex = computeInvertedIndex(i, stopWords);
-			long endTime1 = System.currentTimeMillis();
-			pushInvertedIndex(invertedIndex, i);
-			 // End time
-		    long endTime2 = System.currentTimeMillis();
-		    // Total time
-		    long lTime_for_read = endTime1 - startTime;
-		    long lTime_for_all = endTime2 - startTime;
-		    System.out.println("TIME (read) : " + lTime_for_read + "(ms)");
-		    System.out.println("TIME (all) : " + lTime_for_all + "(ms)");	
-		}
+		Map<String, Map<Integer, Integer>> shortInvertedIndex = computeInvertedIndex(1, stopWords);
+		printInvertedIndex(shortInvertedIndex);
+		
+//		long startTime = System.currentTimeMillis();
+//		for(int i = 1 ; i <= 3 ; i++){
+//			Map<String, Map<Integer, Integer>> invertedIndex = computeInvertedIndex(i, stopWords);
+//			long endTime1 = System.currentTimeMillis();
+//			pushInvertedIndex(invertedIndex, i);
+//			 // End time
+//		    long endTime2 = System.currentTimeMillis();
+//		    // Total time
+//		    long lTime_for_read = endTime1 - startTime;
+//		    long lTime_for_all = endTime2 - startTime;
+//		    System.out.println("TIME (read) : " + lTime_for_read + "(ms)");
+//		    System.out.println("TIME (all) : " + lTime_for_all + "(ms)");	
+//		}
 		
 		
 	}
