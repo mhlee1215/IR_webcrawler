@@ -1,3 +1,4 @@
+package edu.uci.mhlee;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.sql.Connection;
@@ -27,71 +28,8 @@ public class WordFrequency {
 
 
 
-	public static List<String> readStopWords(String textFile){
-		List<String> stopWords = new ArrayList<String>();
-
-		String currentLine = null;
-		try{
-			FileReader fr = new FileReader(textFile);
-			BufferedReader br = new BufferedReader(fr);
-			int j = 0;
-			while((currentLine = br.readLine()) != null){
-				stopWords.add(currentLine.trim());
-			}
-			br.close();
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-
-		return stopWords;
-	}
-
-	public static int getTotalSize(){
-		int total = 0;
-
-
-		Connection connection = null;
-		try
-		{
-			// create a database connection
-			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
-			Statement statement = connection.createStatement();
-			statement.setQueryTimeout(30);  // set timeout to 30 sec.
-			Statement statement2 = connection.createStatement();
-			statement2.setQueryTimeout(30);  // set timeout to 30 sec.
-
-			//statement.executeUpdate("select * from webContents");
-			//		      statement.executeUpdate("create table person (id integer, name string)");
-			//		      statement.executeUpdate("insert into person values(1, 'leo')");
-			//		      statement.executeUpdate("insert into person values(2, 'yui')");
-			ResultSet rs = statement.executeQuery("select count(*) as count from webContents");
-			while(rs.next())
-			{
-				total = rs.getInt("count");
-			}
-		}
-		catch(SQLException e)
-		{
-			// if the error message is "out of memory", 
-			// it probably means no database file is found
-			System.err.println(e.getMessage());
-		}
-		finally
-		{
-			try
-			{
-				if(connection != null)
-					connection.close();
-			}
-			catch(SQLException e)
-			{
-				// connection close failed.
-				System.err.println(e);
-			}
-		}
-
-		return total;
-	}
+	
+	
 
 	public static void pushWordFrequency(Map<String, Integer> wordFrequency, int nGram){
 		// TODO Auto-generated method stub
@@ -151,7 +89,7 @@ public class WordFrequency {
 
 	public static Map<String, Integer> computeWordFrequency(int nGram, List<String> stopWords){
 		Map<String, Integer> wordFrequency = new HashMap<String, Integer>();
-		int maxRow = getTotalSize();
+		int maxRow = DBUtils.getTotalSize();
 		int step = 10000;
 
 		Connection connection = null;
@@ -227,9 +165,71 @@ public class WordFrequency {
 			}
 		}
 
-		wordFrequency = sortByValue(wordFrequency);
+		wordFrequency = Utils.sortByValue(wordFrequency);
 
 		return wordFrequency;
+	}
+	
+	public static void updateWordCount(List<String> stopWords){
+		
+		int maxRow = DBUtils.getTotalSize();
+		int step = 10000;
+
+		Connection connection = null;
+		try
+		{
+			// create a database connection
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(30);  // set timeout to 30 sec.
+			Statement statement2 = connection.createStatement();
+			statement2.setQueryTimeout(30);  // set timeout to 30 sec.
+
+			for(int i = 0 ; i < maxRow ; i+=step){
+				String curQuery = "select id, text from webContents limit "+step+" offset "+i;
+				System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+				while(rs.next())
+				{
+					// read the result set
+					int id = rs.getInt("id");
+					String text = rs.getString("text");
+					//String[] textParts = text.trim().toLowerCase().split("\\s");
+					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
+					List<String> trimedList = new ArrayList<String>();
+					for(int j = 0 ; j < textParts.length ; j++){
+						String curStr = textParts[j].trim(); 
+						if(curStr.length() > 1) trimedList.add(curStr);
+					}
+					
+					String updateQuery = "update webContents set wordcount = "+trimedList.size()+" where id = "+id;
+					//System.out.println(updateQuery);
+					statement2.executeUpdate(updateQuery);
+					
+				}	
+			}
+
+
+		}
+		catch(SQLException e)
+		{
+			// if the error message is "out of memory", 
+			// it probably means no database file is found
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null)
+					connection.close();
+			}
+			catch(SQLException e)
+			{
+				// connection close failed.
+				System.err.println(e);
+			}
+		}
 	}
 
 	public static void print(Map<String, Integer> wordFrequencies){
@@ -241,29 +241,7 @@ public class WordFrequency {
 		}
 	}
 
-	/**
-	 * sortByValue
-	 * @reference : http://stackoverflow.com/questions/109383/sort-a-mapkey-value-by-values-java
-	 * @param map
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static Map<String, Integer> sortByValue(Map<String, Integer> map) {
-		List list = new LinkedList(map.entrySet());
-		Collections.sort(list, new Comparator() {
-			public int compare(Object o1, Object o2) {
-				return -((Comparable) ((Map.Entry) (o1)).getValue())
-						.compareTo(((Map.Entry) (o2)).getValue());
-			}
-		});
-
-		Map result = new LinkedHashMap();
-		for (Iterator it = list.iterator(); it.hasNext();) {
-			Map.Entry entry = (Map.Entry)it.next();
-			result.put(entry.getKey(), entry.getValue());
-		}
-		return result;
-	} 
+	
 
 	public static void main(String[] args) {
 
@@ -273,19 +251,21 @@ public class WordFrequency {
 		//		
 		//		if(1==1) return;
 
-		List<String> stopWords = readStopWords("stopwords.txt");
+		List<String> stopWords = Utils.readStopWords("stopwords.txt");
 //		System.out.println(stopWords);
 //		System.out.println(getTotalSize());
 		
-		int nGram = 0;
+		updateWordCount(stopWords);
 		
-		nGram =1;
-		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
-		pushWordFrequency(wf, nGram);
-		
-		nGram =3;
-		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
-		pushWordFrequency(wf3, nGram);
+//		int nGram = 0;
+//		
+//		nGram =1;
+//		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
+//		pushWordFrequency(wf, nGram);
+//		
+//		nGram =3;
+//		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
+//		pushWordFrequency(wf3, nGram);
 		//print(wf);
 	}
 

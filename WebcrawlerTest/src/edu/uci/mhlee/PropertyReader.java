@@ -1,3 +1,4 @@
+package edu.uci.mhlee;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,7 +35,7 @@ public class PropertyReader {
 			
  
 	//		result = "Company List = " + company1 + ", " + company2 + ", " + company3;
-			System.out.println("dbPath: "+dbPath);
+			//System.out.println("dbPath: "+dbPath);
 		} catch (Exception e) {
 			System.out.println("Exception: " + e);
 		} finally {
