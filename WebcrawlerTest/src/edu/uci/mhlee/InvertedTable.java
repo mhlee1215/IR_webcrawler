@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.TreeMap;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public class InvertedTable {
 	}
 	
 	public static Map<String, Map<Integer, Integer>> computeInvertedIndex(int nGram, List<String> stopWords){
-		Map<String, Map<Integer, Integer>> invertedIndex = new HashMap<String, Map<Integer, Integer>>();
+		Map<String, Map<Integer, Integer>> invertedIndex = new TreeMap<String, Map<Integer, Integer>>();
 		int maxRow = 100;//DBUtils.getTotalSize();
 		int step = 1000;
 
@@ -177,8 +178,11 @@ public class InvertedTable {
 	public static void printInvertedIndex(Map<String, Map<Integer, Integer>> invertedIndex){
 		for(String word : invertedIndex.keySet()){
 			System.out.println(word);
-			for(Integer docId : invertedIndex.get(word).keySet()){
-				System.out.println("\t"+"docId: "+docId+", TF"+invertedIndex.get(word).get(docId));
+			Map<Integer, Integer> docIdTF = invertedIndex.get(word);
+			docIdTF = Utils.sortByValueInt(docIdTF);
+			for(Integer docId : docIdTF.keySet()){
+				
+				System.out.println("\t"+"docId: "+docId+", TF: "+docIdTF.get(docId));
 			}
 			System.out.println("");
 		}

@@ -35,6 +35,24 @@ public class Utils {
 		return result;
 	} 
 	
+	@SuppressWarnings("unchecked")
+	public static Map<Integer, Integer> sortByValueInt(Map<Integer, Integer> map) {
+		List list = new LinkedList(map.entrySet());
+		Collections.sort(list, new Comparator() {
+			public int compare(Object o1, Object o2) {
+				return -((Comparable) ((Map.Entry) (o1)).getValue())
+						.compareTo(((Map.Entry) (o2)).getValue());
+			}
+		});
+
+		Map result = new LinkedHashMap();
+		for (Iterator it = list.iterator(); it.hasNext();) {
+			Map.Entry entry = (Map.Entry)it.next();
+			result.put(entry.getKey(), entry.getValue());
+		}
+		return result;
+	} 
+	
 	public static List<String> readStopWords(String textFile){
 		List<String> stopWords = new ArrayList<String>();
 
