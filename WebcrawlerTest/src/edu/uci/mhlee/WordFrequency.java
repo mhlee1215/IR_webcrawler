@@ -92,8 +92,9 @@ public class WordFrequency {
 
 	public static Map<String, Integer> computeWordFrequency(int nGram, List<String> stopWords){
 		Map<String, Integer> wordFrequency = new HashMap<String, Integer>();
-		int maxRow = DBUtils.getTotalSize();
+		int maxRow = DBUtils.getTotalSize("webContents");
 		int step = 10000;
+		int cntt = 0;
 
 		Connection connection = null;
 		try
@@ -116,8 +117,10 @@ public class WordFrequency {
 					//String[] textParts = text.trim().toLowerCase().split("\\s");
 					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
-					for(int j = 0 ; j < textParts.length ; j++){
-						String curStr = textParts[j].trim(); 
+					
+					for(int j = 0 ; j < textParts.length ; j++)
+					{
+						String curStr = textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
 						if(curStr.length() > 1) trimedList.add(curStr);
 					}
 
@@ -140,7 +143,7 @@ public class WordFrequency {
 							wordFrequency.put(token, 0);
 
 						wordFrequency.put(token, wordFrequency.get(token)+1);
-						//System.out.println(token+", "+(wordFrequency.get(token)+1));
+//						System.out.println(token+", "+(wordFrequency.get(token)+1));
 
 					}
 				}	
@@ -169,13 +172,15 @@ public class WordFrequency {
 		}
 
 		wordFrequency = Utils.sortByValue(wordFrequency);
-
 		return wordFrequency;
 	}
 	
+	
+	
+	
 	public static void updateWordCount(List<String> stopWords){
 		
-		int maxRow = DBUtils.getTotalSize();
+		int maxRow = DBUtils.getTotalSize("webContents");
 		int step = 10000;
 
 		Connection connection = null;
@@ -202,7 +207,7 @@ public class WordFrequency {
 					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
-						String curStr = textParts[j].trim(); 
+						String curStr = textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
 						if(curStr.length() > 1) trimedList.add(curStr);
 					}
 					
@@ -251,12 +256,6 @@ public class WordFrequency {
 	
 
 	public static void main(String[] args) {
-
-		//		String text = "asb'ad dlfkj abc00 12ab03912l !@#$%! ab'ee ab'1 aasdgsd";
-		//		String[] textParts = text.trim().toLowerCase().split("[^0-9a-z']");
-		//		for(String str : textParts) System.out.println(str);
-		//		
-		//		if(1==1) return;
 
 		List<String> stopWords = Utils.readStopWords("stopwords.txt");
 //		System.out.println(stopWords);

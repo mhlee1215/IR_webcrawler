@@ -13,12 +13,12 @@ public class DBUtils {
 			Class.forName("org.sqlite.JDBC");
 		} catch(Exception e) { e.printStackTrace(); }
 	}
-	
-	
-	
-	public static int getTotalSize(){
-		int total = 0;
 
+	
+	
+	
+	public static int getTotalSize(String tableName){
+		int total = 0;
 
 		Connection connection = null;
 		try
@@ -34,7 +34,7 @@ public class DBUtils {
 			//		      statement.executeUpdate("create table person (id integer, name string)");
 			//		      statement.executeUpdate("insert into person values(1, 'leo')");
 			//		      statement.executeUpdate("insert into person values(2, 'yui')");
-			ResultSet rs = statement.executeQuery("select count(*) as count from webContents");
+			ResultSet rs = statement.executeQuery("select count(*) as count from " + tableName);
 			while(rs.next())
 			{
 				total = rs.getInt("count");
