@@ -26,6 +26,7 @@ public class InvertedTable {
 	
 	public static Map<String, Map<Integer, Integer>> computeInvertedIndex(int nGram, List<String> stopWords){
 		Map<String, Map<Integer, Integer>> invertedIndex = new TreeMap<String, Map<Integer, Integer>>();
+		Map<String, Map<Integer, List<Integer>>> wordPos = new TreeMap<String, Map<Integer, List<Integer>>>();
 		int maxRow = DBUtils.getTotalSize("webContents");
 		int step = 10000;
 
@@ -48,7 +49,6 @@ public class InvertedTable {
 					// read the result set
 					int docid = rs.getInt("docid");
 					String text = rs.getString("text");
-					//String[] textParts = text.trim().toLowerCase().split("\\s");
 					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
