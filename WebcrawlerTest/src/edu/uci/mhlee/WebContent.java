@@ -20,8 +20,16 @@ public class WebContent {
 	String text;
 	String html;
 	int outgoingLink;
+	List<WebURL> links;
 
 	
+	
+	public List<WebURL> getLinks() {
+		return links;
+	}
+	public void setLinks(List<WebURL> links) {
+		this.links = links;
+	}
 	public int getWordcount() {
 		return wordcount;
 	}

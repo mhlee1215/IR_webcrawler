@@ -53,5 +53,9 @@ public class Utils {
 
 		return stopWords;
 	}
+	
+	public static String[] mySplit(String text){
+		return text.trim().toLowerCase().split("[^a-z']");
+	}
 
 }

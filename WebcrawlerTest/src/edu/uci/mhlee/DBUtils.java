@@ -14,6 +14,8 @@ public class DBUtils {
 		} catch(Exception e) { e.printStackTrace(); }
 	}
 	
+	
+	
 	public static int getTotalSize(){
 		int total = 0;
 

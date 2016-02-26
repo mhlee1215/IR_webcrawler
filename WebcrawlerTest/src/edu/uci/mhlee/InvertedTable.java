@@ -48,7 +48,7 @@ public class InvertedTable {
 					int docid = rs.getInt("docid");
 					String text = rs.getString("text");
 					//String[] textParts = text.trim().toLowerCase().split("\\s");
-					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
+					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
 						String curStr = textParts[j].trim(); 

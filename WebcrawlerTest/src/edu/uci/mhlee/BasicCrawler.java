@@ -41,8 +41,10 @@ import java.sql.Statement;
  */
 public class BasicCrawler extends WebCrawler {
 
+	static PropertyReader pr = null;
 	static {
 		try {
+			pr = new PropertyReader();
 			Class.forName("org.sqlite.JDBC");
 		} catch(Exception e) { e.printStackTrace(); }
 	}
@@ -118,9 +120,10 @@ public class BasicCrawler extends WebCrawler {
 			webContent.setText(text);
 			webContent.setHtml(html);
 			
-			String[] stParts = text.trim().split("[^a-zA-Z0-9]");
+			String[] stParts = Utils.mySplit(text);
 			webContent.setWordcount(stParts.length);
 			webContent.setOutgoingLink(links.size());
+			webContent.setLinks(links);
 
 		}
 
@@ -143,7 +146,7 @@ public class BasicCrawler extends WebCrawler {
 		try
 		{
 			// create a database connection
-			connection = DriverManager.getConnection("jdbc:sqlite:d:/IR_storage/crawlingData.db");
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
@@ -165,6 +168,8 @@ public class BasicCrawler extends WebCrawler {
 					"'"+content.getHtml()+"',"+
 					""+content.getOutgoingLink()+""+
 					")";
+			
+			
 
 			//System.out.println(insertSQL);
 			statement.executeUpdate(insertSQL);

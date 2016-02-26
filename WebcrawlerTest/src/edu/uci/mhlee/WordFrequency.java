@@ -43,20 +43,21 @@ public class WordFrequency {
 		{
 			// create a database connection
 			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			connection.setAutoCommit(false);
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
 			//statement.executeUpdate("select * from webContents");
 			//				      statement.executeUpdate("create table person (id integer, name string)");
 			//				      statement.executeUpdate("insert into person values(1, 'leo')");
-			int max = 500;
+			int max = -1;
 			int cur = 0;
 			for(String word : wordFrequency.keySet()){
 				cur++;
 				int frequency = wordFrequency.get(word);
-				statement.executeUpdate("insert into wordFrequency values(null, '"+word+"', "+frequency+", "+nGram+")");
+				statement.executeUpdate("insert into wordFrequency values(null, '"+word.replace("'", "''")+"', "+frequency+", "+nGram+")");
 				
-				if(cur == max) break;
+				if(max > 0 && cur == max) break;
 			}
 			
 			//ResultSet rs = statement.executeQuery("select * from webContents");
@@ -72,8 +73,10 @@ public class WordFrequency {
 		{
 			try
 			{
-				if(connection != null)
+				if(connection != null){
+					connection.setAutoCommit(true);
 					connection.close();
+				}
 			}
 			catch(SQLException e)
 			{
@@ -111,7 +114,7 @@ public class WordFrequency {
 					// read the result set
 					String text = rs.getString("text");
 					//String[] textParts = text.trim().toLowerCase().split("\\s");
-					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
+					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
 						String curStr = textParts[j].trim(); 
@@ -180,6 +183,7 @@ public class WordFrequency {
 		{
 			// create a database connection
 			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			connection.setAutoCommit(false);
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 			Statement statement2 = connection.createStatement();
@@ -195,7 +199,7 @@ public class WordFrequency {
 					int id = rs.getInt("id");
 					String text = rs.getString("text");
 					//String[] textParts = text.trim().toLowerCase().split("\\s");
-					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
+					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
 						String curStr = textParts[j].trim(); 
@@ -221,8 +225,11 @@ public class WordFrequency {
 		{
 			try
 			{
-				if(connection != null)
+				if(connection != null){
+					connection.setAutoCommit(true);
 					connection.close();
+				}
+					
 			}
 			catch(SQLException e)
 			{
@@ -255,17 +262,17 @@ public class WordFrequency {
 //		System.out.println(stopWords);
 //		System.out.println(getTotalSize());
 		
-		updateWordCount(stopWords);
+//		updateWordCount(stopWords);
 		
-//		int nGram = 0;
-//		
-//		nGram =1;
-//		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
-//		pushWordFrequency(wf, nGram);
-//		
-//		nGram =3;
-//		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
-//		pushWordFrequency(wf3, nGram);
+		int nGram = 0;
+		
+		nGram =1;
+		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
+		pushWordFrequency(wf, nGram);
+		
+		nGram =3;
+		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
+		pushWordFrequency(wf3, nGram);
 		//print(wf);
 	}
 
