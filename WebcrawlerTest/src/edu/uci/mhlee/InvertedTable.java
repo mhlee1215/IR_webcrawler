@@ -28,7 +28,7 @@ public class InvertedTable {
 		Map<String, Map<Integer, Integer>> invertedIndex = new TreeMap<String, Map<Integer, Integer>>();
 		Map<String, Map<Integer, List<Integer>>> wordPos = new TreeMap<String, Map<Integer, List<Integer>>>();
 		int maxRow = DBUtils.getTotalSize("webContents");
-		int step = 10000;
+		int step = 1000;
 
 		Connection connection = null;
 		try
@@ -72,16 +72,28 @@ public class InvertedTable {
 
 						if(!isValid) continue;
 						
+						//Add if not exist
 						if(invertedIndex.get(token) == null){
 							invertedIndex.put(token, new HashMap<Integer, Integer>());
 						}
-						
+											
+						//Init
 						if(invertedIndex.get(token).get(docid) == null){
 							invertedIndex.get(token).put(docid, 0);
 						}
 						
+						//Increament
 						int curFrequency = invertedIndex.get(token).get(docid);
 						invertedIndex.get(token).put(docid, curFrequency+1);
+						
+						
+						if(wordPos.get(token) == null){
+							wordPos.put(token, new HashMap<Integer, List<Integer>>());
+						}
+						if(wordPos.get(token).get(docid) == null){
+							wordPos.get(token).put(docid, new ArrayList<Integer>());
+						}
+						wordPos.get(token).get(docid).add(j);
 
 					}
 				}	
@@ -187,6 +199,62 @@ public class InvertedTable {
 		}
 	}
 	
+	public static Map<String, Integer> readDocumentFrequency(){
+		Map<String, Integer> dfMap = new TreeMap<String, Integer>();
+		String word;
+		int df;
+		int step = 10000;
+		Connection connection = null;
+		try
+		{
+			// create a database connection
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(30);  // set timeout to 30 sec.
+			
+			int maxRow = DBUtils.getTotalSize("wordFrequency");
+			
+			// First load DFs into dfMap
+			for (int i=0; i< maxRow; i+=step)
+			{
+				String curQuery = "select word, df from wordFrequency limit "+step+" offset "+i;
+				System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+				
+				while (rs.next())
+				{
+					// read the result set
+					word = rs.getString("word");
+					df = rs.getInt("df");
+					dfMap.put(word, df);
+				}
+			}
+			
+			System.out.println("--------------------------------------");
+
+			
+		}
+		catch(SQLException e)
+		{
+			// if the error message is "out of memory", 
+			// it probably means no database file is found
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null)
+					connection.close();
+			}
+			catch(SQLException e)
+			{
+				// connection close failed.
+				System.err.println(e);
+			}
+		}
+		return dfMap;
+	}
 	
 
 	public static TreeMap<String, Map<Integer, Double>> computeTfIdf()
@@ -368,8 +436,8 @@ public class InvertedTable {
 		{
 			Map<String, Map<Integer, Integer>> invertedIndex = computeInvertedIndex(nGram, stopWords);
 			endTime1 = System.currentTimeMillis();
-			System.out.println("now pushing");
-			pushInvertedIndex(invertedIndex, nGram);
+//			System.out.println("now pushing");
+			//pushInvertedIndex(invertedIndex, nGram);
 			endTime2 = System.currentTimeMillis();
 			long lTime_for_read = endTime1 - startTime;
 		    long lTime_for_invertedIndex = endTime2 - startTime;
@@ -377,16 +445,16 @@ public class InvertedTable {
 		    System.out.println("TIME (invertedIndex) : " + lTime_for_invertedIndex + "(ms)");
 		}
 	
-		TreeMap<String, Map<Integer, Double>> tfidfMap = computeTfIdf();
-		System.out.println("Now updating with tf-idf");
-		pushTfIdf(tfidfMap);
-		endTime3 = System.currentTimeMillis();
-	
-	    long lTime_for_tfidf = endTime3 - endTime2;
-	    long lTime_for_all = endTime3 = startTime;
-	    
-	    System.out.println("TIME (tfidf) : " + lTime_for_tfidf + "(ms)");
-	    System.out.println("TIME (all) : " + lTime_for_all + "(ms)");	
+//		TreeMap<String, Map<Integer, Double>> tfidfMap = computeTfIdf();
+//		System.out.println("Now updating with tf-idf");
+//		pushTfIdf(tfidfMap);
+//		endTime3 = System.currentTimeMillis();
+//	
+//	    long lTime_for_tfidf = endTime3 - endTime2;
+//	    long lTime_for_all = endTime3 = startTime;
+//	    
+//	    System.out.println("TIME (tfidf) : " + lTime_for_tfidf + "(ms)");
+//	    System.out.println("TIME (all) : " + lTime_for_all + "(ms)");	
 	
 		
 	}

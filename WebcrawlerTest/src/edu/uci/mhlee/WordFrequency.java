@@ -269,9 +269,9 @@ public class WordFrequency {
 		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
 		pushWordFrequency(wf, nGram);
 		
-		nGram =3;
-		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
-		pushWordFrequency(wf3, nGram);
+//		nGram =3;
+//		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
+//		pushWordFrequency(wf3, nGram);
 		//print(wf);
 	}
 
