@@ -53,6 +53,24 @@ public class Utils {
 		return result;
 	} 
 	
+	@SuppressWarnings("unchecked")
+	public static Map<Integer, Double> sortByValueDouble(Map<Integer, Double> map) {
+		List list = new LinkedList(map.entrySet());
+		Collections.sort(list, new Comparator() {
+			public int compare(Object o1, Object o2) {
+				return -((Comparable) ((Map.Entry) (o1)).getValue())
+						.compareTo(((Map.Entry) (o2)).getValue());
+			}
+		});
+
+		Map result = new LinkedHashMap();
+		for (Iterator it = list.iterator(); it.hasNext();) {
+			Map.Entry entry = (Map.Entry)it.next();
+			result.put(entry.getKey(), entry.getValue());
+		}
+		return result;
+	} 
+	
 	public static List<String> readStopWords(String textFile){
 		List<String> stopWords = new ArrayList<String>();
 
@@ -74,6 +92,10 @@ public class Utils {
 	
 	public static String[] mySplit(String text){
 		return text.trim().toLowerCase().split("[^a-z']");
+	}
+	
+	public static double computeTFIDF(int tf, int N, int df){
+		return ( 1 + Math.log(tf) ) * Math.log( (double)N / df );
 	}
 
 }
