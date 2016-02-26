@@ -46,10 +46,8 @@ public class WordFrequency {
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-			//statement.executeUpdate("select * from webContents");
-			//				      statement.executeUpdate("create table person (id integer, name string)");
-			//				      statement.executeUpdate("insert into person values(1, 'leo')");
-			int max = 500;
+			
+			int max = -1;
 			int cur = 0;
 			for(String word : wordFrequency.keySet()){
 				cur++;
@@ -89,8 +87,9 @@ public class WordFrequency {
 
 	public static Map<String, Integer> computeWordFrequency(int nGram, List<String> stopWords){
 		Map<String, Integer> wordFrequency = new HashMap<String, Integer>();
-		int maxRow = DBUtils.getTotalSize();
+		int maxRow = DBUtils.getTotalSize("webContents");
 		int step = 10000;
+		int cntt = 0;
 
 		Connection connection = null;
 		try
@@ -113,8 +112,10 @@ public class WordFrequency {
 					//String[] textParts = text.trim().toLowerCase().split("\\s");
 					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
 					List<String> trimedList = new ArrayList<String>();
-					for(int j = 0 ; j < textParts.length ; j++){
-						String curStr = textParts[j].trim(); 
+					
+					for(int j = 0 ; j < textParts.length ; j++)
+					{
+						String curStr = textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
 						if(curStr.length() > 1) trimedList.add(curStr);
 					}
 
@@ -137,7 +138,7 @@ public class WordFrequency {
 							wordFrequency.put(token, 0);
 
 						wordFrequency.put(token, wordFrequency.get(token)+1);
-						//System.out.println(token+", "+(wordFrequency.get(token)+1));
+//						System.out.println(token+", "+(wordFrequency.get(token)+1));
 
 					}
 				}	
@@ -166,13 +167,15 @@ public class WordFrequency {
 		}
 
 		wordFrequency = Utils.sortByValue(wordFrequency);
-
 		return wordFrequency;
 	}
 	
+	
+	
+	
 	public static void updateWordCount(List<String> stopWords){
 		
-		int maxRow = DBUtils.getTotalSize();
+		int maxRow = DBUtils.getTotalSize("webContents");
 		int step = 10000;
 
 		Connection connection = null;
@@ -198,7 +201,7 @@ public class WordFrequency {
 					String[] textParts = text.trim().toLowerCase().split("[^a-z']");
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
-						String curStr = textParts[j].trim(); 
+						String curStr = textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
 						if(curStr.length() > 1) trimedList.add(curStr);
 					}
 					
@@ -245,28 +248,23 @@ public class WordFrequency {
 
 	public static void main(String[] args) {
 
-		//		String text = "asb'ad dlfkj abc00 12ab03912l !@#$%! ab'ee ab'1 aasdgsd";
-		//		String[] textParts = text.trim().toLowerCase().split("[^0-9a-z']");
-		//		for(String str : textParts) System.out.println(str);
-		//		
-		//		if(1==1) return;
-
 		List<String> stopWords = Utils.readStopWords("stopwords.txt");
 //		System.out.println(stopWords);
 //		System.out.println(getTotalSize());
 		
-		updateWordCount(stopWords);
+//		updateWordCount(stopWords);
 		
-//		int nGram = 0;
-//		
-//		nGram =1;
-//		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
-//		pushWordFrequency(wf, nGram);
-//		
-//		nGram =3;
-//		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
-//		pushWordFrequency(wf3, nGram);
-		//print(wf);
+
+		for (int nGram=1; nGram<=3; nGram++)
+		{
+			System.out.println("-----------------------");
+			System.out.println("ngram: " + nGram);
+			Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
+//			System.out.println(wf);
+			
+			pushWordFrequency(wf, nGram);
+		}
+
 	}
 
 }
