@@ -307,7 +307,7 @@ public class InvertedTable {
 			Statement statement = connection.createStatement();			
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-			statement.executeUpdate("alter table invertedIndex add column tfidf double"); // Do this just once
+			//statement.executeUpdate("alter table invertedIndex add column tfidf double"); // Do this just once
 			
 			int max = -1;
 			int cur = 0;
