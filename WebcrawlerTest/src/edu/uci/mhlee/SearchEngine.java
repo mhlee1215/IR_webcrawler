@@ -63,7 +63,7 @@ public class SearchEngine {
 				// First load DFs into dfMap
 
 				String curQuery = "select word, docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'";
-				System.out.println(curQuery);
+				//System.out.println(curQuery);
 				ResultSet rs = statement.executeQuery(curQuery);
 
 				while (rs.next())
@@ -97,11 +97,11 @@ public class SearchEngine {
 								if(matchedPos.length() > 0)
 									matchedPosCnt = matchedPos.split(",").length;
 						
-								if(docid == 3465){
-									System.out.println(queryWord+"//// "+matchedPos);
-									System.out.println("posMap.get(docid):" +posMap.get(docid));
-									System.out.println("pos:" +pos);
-								}
+//								if(docid == 3465){
+//									System.out.println(queryWord+"//// "+matchedPos);
+//									System.out.println("posMap.get(docid):" +posMap.get(docid));
+//									System.out.println("pos:" +pos);
+//								}
 								tfidfMap.put(docid, tfidfMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
 								
 								//log(1+matchedPosCnt)+1
