@@ -189,7 +189,7 @@ public class SearchEngine {
 
 
 				j++;
-				if(j > 10) break;
+				if(j > 9) break;
 			}
 			System.out.println("");
 
