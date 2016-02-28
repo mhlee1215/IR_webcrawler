@@ -91,7 +91,13 @@ public class Utils {
 	}
 	
 	public static String[] mySplit(String text){
-		return text.trim().toLowerCase().split("[^a-z']");
+		//return text.trim().toLowerCase().split("[^a-z']");
+		return text.trim().split("[^a-zA-Z']");
+		//return text.trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
+	}
+	
+	public static String myTrimmer(String text){
+		return text.trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","");//.replaceAll("'", "''");
 	}
 	
 	public static double computeTFIDF(int tf, int N, int df){

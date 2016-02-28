@@ -1,23 +1,19 @@
 package edu.uci.mhlee;
-import java.io.BufferedReader;
-import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 
 public class WordFrequency {
+	static boolean isDebug = true;
+	
 	static PropertyReader pr = null;
 	static {
 		try {
@@ -39,6 +35,7 @@ public class WordFrequency {
 		//select (select count(*) from wordFrequency b  where a.id >= b.id and a.ngram = b.ngram) as cnt, 
 		//      word, frequency from wordFrequency a where ngram = 3 limit 20
 		Connection connection = null;
+		String sql = "";
 		try
 		{
 			// create a database connection
@@ -47,27 +44,22 @@ public class WordFrequency {
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-			//statement.executeUpdate("select * from webContents");
-			//				      statement.executeUpdate("create table person (id integer, name string)");
-			//				      statement.executeUpdate("insert into person values(1, 'leo')");
 			int max = -1;
 			int cur = 0;
 			for(String word : wordFrequency.keySet()){
 				cur++;
 				int frequency = wordFrequency.get(word);
-				statement.executeUpdate("insert into wordFrequency values(null, '"+word.replace("'", "''")+"', "+frequency+", "+nGram+")");
+				sql = "insert into wordFrequency values(null, '"+word.replace("'", "''")+"', "+frequency+", "+nGram+")";
+				statement.executeUpdate(sql);
 				
 				if(max > 0 && cur == max) break;
-			}
-			
-			//ResultSet rs = statement.executeQuery("select * from webContents");
-			
+			}		
 		}
 		catch(SQLException e)
 		{
 			// if the error message is "out of memory", 
 			// it probably means no database file is found
-			System.err.println(e.getMessage());
+			System.err.println(e.getMessage()+", "+sql);
 		}
 		finally
 		{
@@ -91,7 +83,7 @@ public class WordFrequency {
 	}
 
 	public static Map<String, Integer> computeWordFrequency(int nGram, List<String> stopWords){
-		Map<String, Integer> wordFrequency = new HashMap<String, Integer>();
+		Map<String, Integer> wordFrequency = new TreeMap<String, Integer>();
 		int maxRow = DBUtils.getTotalSize("webContents");
 		int step = 10000;
 		int cntt = 0;
@@ -108,7 +100,8 @@ public class WordFrequency {
 
 			for(int i = 0 ; i < maxRow ; i+=step){
 				String curQuery = "select text from webContents limit "+step+" offset "+i;
-				System.out.println(curQuery);
+				if(isDebug)
+					System.out.println(curQuery);
 				ResultSet rs = statement.executeQuery(curQuery);
 				while(rs.next())
 				{
@@ -120,7 +113,8 @@ public class WordFrequency {
 					
 					for(int j = 0 ; j < textParts.length ; j++)
 					{
-						String curStr = textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
+						//Changed to function form.
+						String curStr = Utils.myTrimmer(textParts[j]); 
 						if(curStr.length() > 1) trimedList.add(curStr);
 					}
 
@@ -171,13 +165,17 @@ public class WordFrequency {
 			}
 		}
 
-		wordFrequency = Utils.sortByValue(wordFrequency);
+		//wordFrequency = Utils.sortByValue(wordFrequency);
 		return wordFrequency;
 	}
 	
 	
 	
-	
+	/**
+	 * 
+	 * @param stopWords
+	 * @deprecated Too Slow.
+	 */
 	public static void updateWordCount(List<String> stopWords){
 		
 		int maxRow = DBUtils.getTotalSize("webContents");
@@ -207,7 +205,8 @@ public class WordFrequency {
 					String[] textParts = Utils.mySplit(text);
 					List<String> trimedList = new ArrayList<String>();
 					for(int j = 0 ; j < textParts.length ; j++){
-						String curStr = textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","").replaceAll("'", "''"); 
+						//Changed to function form.
+						String curStr = Utils.myTrimmer(textParts[j]); 
 						if(curStr.length() > 1) trimedList.add(curStr);
 					}
 					
@@ -249,7 +248,7 @@ public class WordFrequency {
 		for(String key : wordFrequencies.keySet()){
 			System.out.println(key+"/"+wordFrequencies.get(key));
 			j++;
-			if(j > 50) break;
+			if(j > 5000) break;
 		}
 	}
 
@@ -268,6 +267,7 @@ public class WordFrequency {
 		nGram =1;
 		Map<String, Integer> wf = computeWordFrequency(nGram, stopWords);
 		pushWordFrequency(wf, nGram);
+		//print(wf);
 		
 //		nGram =3;
 //		Map<String, Integer> wf3 = computeWordFrequency(nGram, stopWords);
