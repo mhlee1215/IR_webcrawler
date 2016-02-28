@@ -103,5 +103,29 @@ public class Utils {
 	public static double computeTFIDF(int tf, int N, int df){
 		return ( 1 + Math.log(tf) ) * Math.log( (double)N / df );
 	}
+	
+	public static String neighborPosString(String pos1, String pos2, int gap){
+		String posStr = "";
+		
+		String[] parts1 = pos1.split(",");
+		String[] parts2 = pos2.split(",");
+		
+		for(String part1Str : parts1){
+			int part1Int = Integer.parseInt(part1Str.trim());
+			for(String part2Str : parts2){
+				int part2Int = Integer.parseInt(part2Str.trim());
+				if(part2Int-part1Int <= gap && part2Int-part1Int >= 0){
+					//System.out.println(part2Int+"///"+part1Int +" /// "+(part2Int-part1Int)+" ///"+gap);
+					if(posStr.length() == 0)
+						posStr = Integer.toString(part2Int);
+					else
+						posStr += ", "+Integer.toString(part2Int);
+				}
+			}	
+		}
+		
+		return posStr;
+		
+	}
 
 }
