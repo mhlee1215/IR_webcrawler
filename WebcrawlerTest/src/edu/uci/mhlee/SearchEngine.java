@@ -8,7 +8,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -39,6 +41,7 @@ public class SearchEngine {
 			
 			while(!"exit".equals(query.toLowerCase())){//query.length() >= 0){
 				Map<Integer, Double> tfidfMap = new HashMap<Integer, Double>();
+				List<Map<Integer, String>> posMapList = new ArrayList<Map<Integer, String>>();
 				Map<Integer, String> posMap = null;//new HashMap<Integer, String>();
 				
 				System.out.print("Plase enter query: ");
@@ -53,6 +56,7 @@ public class SearchEngine {
 				int queryCnt = 0;
 				for(String queryWord : queryParts){
 					Map<Integer, String> curPosMap = new HashMap<Integer, String>();
+					
 					// First load DFs into dfMap
 
 					String curQuery = "select word, docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'";
@@ -107,6 +111,7 @@ public class SearchEngine {
 					}
 
 					posMap = curPosMap;
+					posMapList.add(posMap);
 					queryCnt++;
 				}
 				tfidfMap = Utils.sortByValueDouble(tfidfMap);
