@@ -119,7 +119,7 @@ public class Utils {
 					if(posStr.length() == 0)
 						posStr = Integer.toString(part2Int);
 					else
-						posStr += ", "+Integer.toString(part2Int);
+						posStr += ","+Integer.toString(part2Int);
 				}
 			}	
 		}
