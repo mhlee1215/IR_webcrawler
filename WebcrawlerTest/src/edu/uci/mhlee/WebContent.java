@@ -21,9 +21,16 @@ public class WebContent {
 	String html;
 	int outgoingLink;
 	List<WebURL> links;
+	String title;
 
 	
 	
+	public String getTitle() {
+		return title;
+	}
+	public void setTitle(String title) {
+		this.title = title;
+	}
 	public List<WebURL> getLinks() {
 		return links;
 	}
@@ -113,8 +120,8 @@ public class WebContent {
 	public String toString() {
 		return "WebContent [docid=" + docid + ", url=" + url + ", domain=" + domain + ", subDomain=" + subDomain
 				+ ", path=" + path + ", parentUrl=" + parentUrl + ", anchor=" + anchor + ", textLength=" + textLength
-				+ ", htmlLength=" + htmlLength + ", text=" + text + ", html=" + html + ", outgoingLink=" + outgoingLink
-				+ "]";
+				+ ", htmlLength=" + htmlLength + ", wordcount=" + wordcount + ", text=" + text + ", html=" + html
+				+ ", outgoingLink=" + outgoingLink + ", links=" + links + ", title=" + title + "]";
 	}
 }
 

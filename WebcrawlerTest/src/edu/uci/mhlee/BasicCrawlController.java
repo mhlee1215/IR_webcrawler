@@ -27,6 +27,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
@@ -49,7 +50,7 @@ public class BasicCrawlController {
      * crawlStorageFolder is a folder where intermediate crawl data is
      * stored.
      */
-    String crawlStorageFolder = "D:/IR_storage";//args[0];
+    String crawlStorageFolder = "/home/mhlee/IR_storage";//args[0];
 
     /*
      * numberOfCrawlers shows the number of concurrent threads that should
@@ -59,7 +60,7 @@ public class BasicCrawlController {
 
     CrawlConfig config = new CrawlConfig();
 
-    config.setUserAgentString("IR W16 WebCrawler 32602237");
+    //config.setUserAgentString("IR W16 WebCrawler 32602237");
     config.setCrawlStorageFolder(crawlStorageFolder);
 
     /*
@@ -133,6 +134,17 @@ public class BasicCrawlController {
     long startTime = System.currentTimeMillis();
      
     controller.start(BasicCrawler.class, numberOfCrawlers);
+    
+    try
+	{
+		if(BasicCrawler.connection != null)
+			BasicCrawler.connection.close();
+	}
+	catch(SQLException e)
+	{
+		// connection close failed.
+		System.err.println(e);
+	}
     
  // End time
     long endTime = System.currentTimeMillis();
