@@ -56,10 +56,10 @@ public class BasicCrawlController {
      * numberOfCrawlers shows the number of concurrent threads that should
      * be initiated for crawling.
      */
-    int numberOfCrawlers = 3;//Integer.parseInt(args[1]);
+    int numberOfCrawlers = 8;//Integer.parseInt(args[1]);
 
     CrawlConfig config = new CrawlConfig();
-
+    
     //config.setUserAgentString("IR W16 WebCrawler 32602237");
     config.setCrawlStorageFolder(crawlStorageFolder);
 
@@ -67,7 +67,7 @@ public class BasicCrawlController {
      * Be polite: Make sure that we don't send more than 1 request per
      * second (1000 milliseconds between requests).
      */
-    config.setPolitenessDelay(300);
+    config.setPolitenessDelay(1000);
 
     /*
      * You can set the maximum crawl depth here. The default value is -1 for
@@ -103,7 +103,7 @@ public class BasicCrawlController {
      * want to start a fresh crawl, you need to delete the contents of
      * rootFolder manually.
      */
-    config.setResumableCrawling(false);
+    config.setResumableCrawling(true);
 
     /*
      * Instantiate the controller for this crawl.
@@ -138,6 +138,7 @@ public class BasicCrawlController {
     try
 	{
 		if(BasicCrawler.connection != null)
+			//BasicCrawler.connection.setAutoCommit(true);
 			BasicCrawler.connection.close();
 	}
 	catch(SQLException e)

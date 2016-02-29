@@ -29,7 +29,11 @@ public class WebContent {
 		return title;
 	}
 	public void setTitle(String title) {
-		this.title = title;
+		if(title != null)
+			this.title = title.replace("'", "''");
+		else
+			this.title = "";
+				
 	}
 	public List<WebURL> getLinks() {
 		return links;
@@ -85,6 +89,8 @@ public class WebContent {
 	public void setAnchor(String anchor) {
 		if(anchor != null)
 			this.anchor = anchor.replace("'", "''");
+		else 
+			this.anchor = "";
 	}
 	public int getTextLength() {
 		return textLength;
@@ -102,13 +108,19 @@ public class WebContent {
 		return text;
 	}
 	public void setText(String text) {
-		this.text = text.replace("'", "''");
+		if(text != null)
+			this.text = text.replace("'", "''");
+		else 
+			this.text = "";
 	}
 	public String getHtml() {
 		return html;
 	}
 	public void setHtml(String html) {
-		this.html = html.replace("'", "''");
+		if(html != null)
+			this.html = html.replace("'", "''");
+		else 
+			this.html = "";
 	}
 	public int getOutgoingLink() {
 		return outgoingLink;

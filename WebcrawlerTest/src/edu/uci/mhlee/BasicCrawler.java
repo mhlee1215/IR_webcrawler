@@ -47,6 +47,7 @@ public class BasicCrawler extends WebCrawler {
 			pr = new PropertyReader();
 			Class.forName("org.sqlite.JDBC");
 			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			//connection.setAutoCommit(false);
 			
 		} catch(Exception e) { e.printStackTrace(); }
 	}
@@ -219,6 +220,7 @@ public class BasicCrawler extends WebCrawler {
 			String urlString = url.getURL().toLowerCase();
 			//url.get
 			
+			//System.out.println("select count(*) as cnt from webContents where url = '"+urlString+"'");
 			ResultSet rs = statement.executeQuery("select count(*) as cnt from webContents where url = '"+urlString+"'");
 			while(rs.next())
 			{
@@ -229,6 +231,7 @@ public class BasicCrawler extends WebCrawler {
 					isAlreadyVisited = true;
 				}
 			}
+			//System.out.println("Is already visited?"+isAlreadyVisited);
 		}
 		catch(SQLException e)
 		{
