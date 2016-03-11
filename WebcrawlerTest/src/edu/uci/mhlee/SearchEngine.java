@@ -160,14 +160,12 @@ public class SearchEngine {
 					queryCnt++;
 				}
 				
-				System.out.println("add pageRank Concept");
+				//add pageRank Concept
 				for(Integer curDocid : tfidfMap.keySet()){
 					Double curScore = tfidfMap.get(curDocid);
 					Double pVal = pRank.get(curDocid);
 					if(pVal == null) pVal = pageRankInit;
-					if(curDocid == 1){
-						System.out.println("pVal = "+pVal);
-					}
+					
 					tfidfMap.put(curDocid, curScore + pageRankWeight*Math.min(pVal, pageRankMax));
 				}
 				
