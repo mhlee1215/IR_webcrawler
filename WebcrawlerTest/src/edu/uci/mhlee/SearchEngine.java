@@ -27,6 +27,11 @@ public class SearchEngine {
 	public static void main(String[] args) {	
 		String query = "Minhaeng";
 		int rankType = 2;
+		double anchorWeight = 5;
+		double titleWeight = 5;
+		double pageRankWeight = 1;
+		double pageRankMax = 9999;
+		double pageRankInit = 0.5;
 
 		Connection connection = null;
 		try
@@ -36,8 +41,10 @@ public class SearchEngine {
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
+			Map<Integer, Double> pRank = PageRank.readPageRank();
+			
 			Scanner keyboard = new Scanner(System.in);
-
+			
 			
 			while(!"exit".equals(query.toLowerCase())){//query.length() >= 0){
 				Map<Integer, Double> tfidfMap = new HashMap<Integer, Double>();
@@ -48,7 +55,7 @@ public class SearchEngine {
 				query = keyboard.nextLine();
 				String[] queryParts = query.split(" ");
 
-				String word;
+				//String word;
 				int tf, df, docid;
 				double tfidf;
 				String pos;
@@ -59,61 +66,112 @@ public class SearchEngine {
 					
 					// First load DFs into dfMap
 
-					String curQuery = "select word, docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'";
-					//System.out.println(curQuery);
-					ResultSet rs = statement.executeQuery(curQuery);
-
-					while (rs.next())
 					{
-						// read the result set
-						word = rs.getString("word");
-						docid = rs.getInt("docid");
-						tf = rs.getInt("tf");
-						df = rs.getInt("df");
-						tfidf = rs.getDouble("tfidf");
-						pos = rs.getString("pos");
-
-
-						if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
-						//Individual adding
-						if(rankType == 1){
-							tfidfMap.put(docid, tfidfMap.get(docid)+tfidf);	
-						}else if(rankType == 2){
-							//Just copy only for the first query word
-							if(queryCnt==0){
-								curPosMap.put(docid, pos);
+						//Based on text content
+						String curQuery = "select docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'";
+						//System.out.println(curQuery);
+						ResultSet rs = statement.executeQuery(curQuery);
+	
+						while (rs.next())
+						{
+							// read the result set
+							//word = rs.getString("word");
+							docid = rs.getInt("docid");
+							tf = rs.getInt("tf");
+							df = rs.getInt("df");
+							tfidf = rs.getDouble("tfidf");
+							pos = rs.getString("pos");
+	
+	
+							if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
+							//Individual adding
+							if(rankType == 1){
 								tfidfMap.put(docid, tfidfMap.get(docid)+tfidf);	
-							}
-							//Need to check from second query word
-							else{
-								//Co-occurrence
-								if(posMap.get(docid) != null){
-									String matchedPos = Utils.neighborPosString(posMap.get(docid), pos, 1);
-									curPosMap.put(docid, matchedPos);
-									int matchedPosCnt = 0;
-									if(matchedPos.length() > 0)
-										matchedPosCnt = matchedPos.split(",").length;
-
-									//								if(docid == 3465){
-									//									System.out.println(queryWord+"//// "+matchedPos);
-									//									System.out.println("posMap.get(docid):" +posMap.get(docid));
-									//									System.out.println("pos:" +pos);
-									//								}
-									tfidfMap.put(docid, tfidfMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
-
-									//log(1+matchedPosCnt)+1
+							}else if(rankType == 2){
+								//Just copy only for the first query word
+								if(queryCnt==0){
+									curPosMap.put(docid, pos);
+									tfidfMap.put(docid, tfidfMap.get(docid)+tfidf);	
+								}
+								//Need to check from second query word
+								else{
+									//Co-occurrence
+									if(posMap.get(docid) != null){
+										String matchedPos = Utils.neighborPosString(posMap.get(docid), pos, 1);
+										curPosMap.put(docid, matchedPos);
+										int matchedPosCnt = 0;
+										if(matchedPos.length() > 0)
+											matchedPosCnt = matchedPos.split(",").length;
+	
+						
+										tfidfMap.put(docid, tfidfMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
+	
+										//log(1+matchedPosCnt)+1
+									}
 								}
 							}
+	
+	
+	
 						}
-
-
-
+	
+						posMap = curPosMap;
+						posMapList.add(posMap);
 					}
-
-					posMap = curPosMap;
-					posMapList.add(posMap);
+					
+					
+					{
+						//Add Anchor weight
+						String curQuery = "select docid, df from invertedIndexAnchor where type = 'anchor' and word = '"+queryWord+"'";
+						//System.out.println(curQuery);
+						ResultSet rs = statement.executeQuery(curQuery);
+						while (rs.next())
+						{
+							// read the result set
+							//word = rs.getString("word");
+							docid = rs.getInt("docid");
+							df = rs.getInt("df");
+							
+							if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
+							double curScore = tfidfMap.get(docid);
+							tfidfMap.put(docid, curScore+anchorWeight/df);
+						}
+					}
+					
+					{
+						//Add Title weight
+						String curQuery = "select docid, df from invertedIndexAnchor where type = 'title' and word = '"+queryWord+"'";
+						//System.out.println(curQuery);
+						ResultSet rs = statement.executeQuery(curQuery);
+						while (rs.next())
+						{
+							// read the result set
+							//word = rs.getString("word");
+							docid = rs.getInt("docid");
+							df = rs.getInt("df");
+							
+							if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
+							double curScore = tfidfMap.get(docid);
+							tfidfMap.put(docid, curScore+titleWeight/df);
+						}
+					}
+					
+					
 					queryCnt++;
 				}
+				
+				System.out.println("add pageRank Concept");
+				for(Integer curDocid : tfidfMap.keySet()){
+					Double curScore = tfidfMap.get(curDocid);
+					Double pVal = pRank.get(curDocid);
+					if(pVal == null) pVal = pageRankInit;
+					if(curDocid == 1){
+						System.out.println("pVal = "+pVal);
+					}
+					tfidfMap.put(curDocid, curScore + pageRankWeight*Math.min(pVal, pageRankMax));
+				}
+				
+				
 				tfidfMap = Utils.sortByValueDouble(tfidfMap);
 				print(tfidfMap);
 			}
@@ -170,12 +228,13 @@ public class SearchEngine {
 			String url;
 			String subdomain;
 			String path;
+			String title;
 			int j = 0;
 			NumberFormat formatter = new DecimalFormat("#0.000");     
 			for(Integer key : wordFrequencies.keySet()){
 				//System.out.println(key+"/"+wordFrequencies.get(key));
 
-				String curQuery = "select docid, url, subdomain, path from webContents where docid = "+key;
+				String curQuery = "select docid, url, subdomain, path, title from webContents where docid = "+key;
 				//System.out.println(curQuery);
 				ResultSet rs = statement.executeQuery(curQuery);
 
@@ -186,8 +245,9 @@ public class SearchEngine {
 					url = rs.getString("url");
 					subdomain = rs.getString("subdomain");
 					path = rs.getString("path");
+					title = rs.getString("title");
 
-					System.out.println("Rank<"+(j+1)+"> Score:"+formatter.format(wordFrequencies.get(key))+"\tDocID: "+docid+"\tURL: "+url+"\tSubDomain: "+subdomain+"\tPath:"+path);
+					System.out.println("Rank<"+(j+1)+"> Score:"+formatter.format(wordFrequencies.get(key))+"\tDocID: "+docid+"\tTitle: "+title+"\tURL: "+url+"\tSubDomain: "+subdomain+"\tPath:"+path);
 					
 				}
 				

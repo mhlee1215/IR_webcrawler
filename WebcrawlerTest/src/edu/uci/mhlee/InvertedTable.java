@@ -35,6 +35,8 @@ public class InvertedTable {
 		return computeInvertedIndex(1, stopWords, df);
 	}
 
+	 
+	
 	public static InvertedIndexData computeInvertedIndex(int nGram, List<String> stopWords, Map<String, Integer> dfMap){
 		InvertedIndexData idx = new InvertedIndexData();
 		Map<String, Map<Integer, Double>> tfidf = new TreeMap<String, Map<Integer, Double>>();
@@ -174,6 +176,117 @@ public class InvertedTable {
 		idx.setPos(wordPos);
 		return idx;
 	}
+	
+	
+	public static InvertedIndexData computeInvertedIndexAnchor(){
+		InvertedIndexData idx = new InvertedIndexData();
+				
+		Map<String, List<Integer>> anchorMap = new TreeMap<String, List<Integer>>();
+		Map<String, List<Integer>> titleMap = new TreeMap<String, List<Integer>>();
+		
+		int maxRow = DBUtils.getTotalSize("webContents");
+		int N = maxRow;
+		int step = 10000;
+
+		Connection connection = null;
+		try
+		{
+			// create a database connection
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			Statement statement = connection.createStatement();
+			statement.setQueryTimeout(30);  // set timeout to 30 sec.
+			//			Statement statement2 = connection.createStatement();
+			//			statement2.setQueryTimeout(30);  // set timeout to 30 sec.
+
+			for(int i = 0 ; i < maxRow ; i+=step){
+				String curQuery = "select docid, anchor, title from webContents limit "+step+" offset "+i;
+				System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+				while(rs.next())
+				{
+					// read the result set
+					int docid = rs.getInt("docid");
+					{
+						String anchor = rs.getString("anchor");
+						String[] textParts = Utils.mySplit(anchor);
+						
+						List<String> trimedList = new ArrayList<String>();
+						for(int j = 0 ; j < textParts.length ; j++){
+							String curStr = Utils.myTrimmer(textParts[j]);//textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","");//.replaceAll("'", "''"); 
+							if(curStr.length() > 1) trimedList.add(curStr);
+						}
+	
+						//System.out.println(trimedList);
+	
+						for(int j = 0 ; j < trimedList.size() ; j++){
+							String token = trimedList.get(j);
+							token = token.trim();
+	
+							//Add
+							if(anchorMap.get(token) == null) anchorMap.put(token, new ArrayList<Integer>());
+							anchorMap.get(token).add(docid);
+							
+						}
+					}
+					
+					{
+						String title = rs.getString("title");
+						String[] textParts = Utils.mySplit(title);
+						
+						List<String> trimedList = new ArrayList<String>();
+						for(int j = 0 ; j < textParts.length ; j++){
+							String curStr = Utils.myTrimmer(textParts[j]);//textParts[j].trim().replaceAll("^['0-9]+", "").replaceAll("['0-9]+$","");//.replaceAll("'", "''"); 
+							if(curStr.length() > 1) trimedList.add(curStr);
+						}
+	
+						//System.out.println(trimedList);
+	
+						for(int j = 0 ; j < trimedList.size() ; j++){
+							String token = trimedList.get(j);
+							token = token.trim();
+	
+							//Add
+							if(titleMap.get(token) == null) titleMap.put(token, new ArrayList<Integer>());
+							titleMap.get(token).add(docid);
+							
+						}
+					}
+					
+					
+					
+				}	
+			}
+
+
+
+
+		}
+		catch(SQLException e)
+		{
+			// if the error message is "out of memory", 
+			// it probably means no database file is found
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null)
+					connection.close();
+			}
+			catch(SQLException e)
+			{
+				// connection close failed.
+				System.err.println(e);
+			}
+		}
+
+		idx.setAnchor(anchorMap);
+		idx.setTitle(titleMap);
+		
+		return idx;
+	}
+	
 
 	public static void pushInvertedIndex(InvertedIndexData  idx, int nGram){
 		// TODO Auto-generated method stub
@@ -214,6 +327,88 @@ public class InvertedTable {
 					String exeQuery = "insert into invertedIndex values(null, '"+ word.replace("'",  "''") +"', "+docid+", "+tf+","+nGram+","+df+", "+tfidf+", '"+pos+"')";
 //					if(isDebug)
 //						System.out.println(exeQuery);
+					statement.executeUpdate(exeQuery);
+				}
+
+				if(max > 0 && cur == max) break;				
+			}
+			
+			connection.setAutoCommit(true);
+		}
+		catch(SQLException e)
+		{
+			// if the error message is "out of memory", 
+			// it probably means no database file is found
+			System.err.println(e.getMessage());
+		}
+		finally
+		{
+			try
+			{
+				if(connection != null){
+					connection.setAutoCommit(true);
+					connection.close();
+				}
+			}
+			catch(SQLException e)
+			{
+				// connection close failed.
+				System.err.println(e);
+			}
+		}
+	}
+	
+	public static void pushInvertedIndexAnchor(InvertedIndexData  idx, Map<String, Integer> df){
+		// TODO Auto-generated method stub
+		
+		Map<String, List<Integer>> anchorMap = idx.getAnchor();
+		Map<String, List<Integer>> titleMap = idx.getTitle();
+		int averageDF = 65; //Precomputed 
+		
+		if(isDebug)
+			System.out.println("Push Inverted Index Anchor Start!");
+
+		//Get rank query
+		//select (select count(*) from wordFrequency b  where a.id >= b.id and a.ngram = b.ngram) as cnt, 
+		//      word, frequency from wordFrequency a where ngram = 3 limit 20
+		Connection connection = null;
+		try
+		{
+			// create a database connection
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			connection.setAutoCommit(false);
+			Statement statement = connection.createStatement();
+
+			statement.setQueryTimeout(30);  // set timeout to 30 sec.
+
+			//statement.executeUpdate("create table invertedIndex (id integer, word string, docid integer, tf integer, ngram integer)");
+
+			int max = -1;
+			int cur = 0;
+			String type = "anchor";
+			for(String word : anchorMap.keySet()){
+				Integer wordFrequency = df.get(word);
+				if(wordFrequency == null) wordFrequency = averageDF;
+				cur++;
+				if(isDebug && cur%100 == 0)
+					System.out.println("<"+cur+", "+anchorMap.keySet().size()+">");
+				for(Integer docid : anchorMap.get(word)){
+					String exeQuery = "insert into invertedIndexAnchor values(null, '"+ word.replace("'",  "''") +"', "+docid+", "+wordFrequency+",'"+type+"')";
+					statement.executeUpdate(exeQuery);
+				}
+
+				if(max > 0 && cur == max) break;				
+			}
+			
+			type = "title";
+			for(String word : titleMap.keySet()){
+				Integer wordFrequency = df.get(word);
+				if(wordFrequency == null) wordFrequency = averageDF;
+				cur++;
+				if(isDebug && cur%100 == 0)
+					System.out.println("<"+cur+", "+titleMap.keySet().size()+">");
+				for(Integer docid : titleMap.get(word)){
+					String exeQuery = "insert into invertedIndexAnchor values(null, '"+ word.replace("'",  "''") +"', "+docid+", "+wordFrequency+",'"+type+"')";
 					statement.executeUpdate(exeQuery);
 				}
 
@@ -590,126 +785,40 @@ public class InvertedTable {
 
 
 
-//	public static void MyTest(List<String> stop){
-//		final String DB = "jdbc:sqlite:/home/mhlee/IR_storage/Data.db";
-//		HashMap<String, Double> idf = new HashMap<String, Double>();
-//		HashMap<String, HashMap<Integer, Integer>> tf = new HashMap<String, HashMap<Integer, Integer>>();
-//		HashMap<String, HashMap<Integer, List<Integer>>> position = new HashMap<String, HashMap<Integer, List<Integer>>>();
-//		HashMap<Integer, String[]> totalDocuments = new HashMap<Integer, String[]>();
-//
-//		int totalDocSize=0;
-//		int curPos;
-//		String str;
-//		int docNumber;
-//
-//		Connection connection = null;
-//		try {
-//			// create a database connection
-//			connection = DriverManager.getConnection(DB);
-//			connection.setAutoCommit(false);
-//			Statement statement = connection.createStatement();
-//			statement.setQueryTimeout(30); // set timeout to 30 sec.
-//			Statement stmt = connection.createStatement();
-//			stmt.setQueryTimeout(30); // set timeout to 30 sec.
-//
-//
-//			for (int x = 0; x < 2956; x++) { //1478 //2956
-//				System.out.println(x);
-//				String offsetstr = "offset " + (100 * x);
-//				ResultSet db = statement.executeQuery("select * from CrawledData limit 100 "+ offsetstr);
-//
-//				while (db.next()) { // unique word 찾아내서 저장
-//					totalDocSize++; //counting the number of documents
-//					curPos= 0; //indicates current position
-//					str = db.getString("list");
-//					docNumber = db.getInt("docid");
-//					String[] tokenizedTerms = str.trim().toLowerCase().replaceAll("[\\W&&[^\\s]]", "").split("[^a-zA-Z0-9]+");
-//					totalDocuments.put(docNumber, tokenizedTerms);
-//					for (String term : tokenizedTerms) {
-//
-//						//list = new ArrayList<Integer>();
-//						//	list.removeAll(list);
-//						//for(int i= 1 ;i<list.size(); i++)
-//						//	list.remove(i);
-//						//list.clear();
-//						if ((!stop.contains(term)) && term.length()!=0) {
-//
-//							if(tf.get(term) == null) tf.put(term, new HashMap<Integer, Integer>());
-//							if(tf.get(term).get(docNumber) == null) tf.get(term).put(docNumber, 0);
-//							//System.out.println(tf.get(term));
-//							tf.get(term).put(docNumber, tf.get(term).get(docNumber)+1);
-//
-//							if(position.get(term) == null) position.put(term, new HashMap<Integer, List<Integer>>());
-//							if(position.get(term).get(docNumber) == null) position.get(term).put(docNumber, new ArrayList<Integer>());
-//							position.get(term).get(docNumber).add(curPos);
-//
-//							curPos++;
-//						} // end of for tokenizedTerms
-//
-//					} // end of while
-//				} // end of for x
-//			}
-//		}catch (SQLException e) {
-//			// if the error message is "out of memory", it probably means no
-//			// database file is found
-//			System.err.println(e.getMessage());
-//		} // end of catch
-//		finally {
-//			try {
-//				if (connection != null){
-//					connection.setAutoCommit(true);
-//					connection.close();
-//				}
-//			} // end of try
-//			catch (SQLException e) { // connection close failed.
-//				System.err.println(e);
-//			} // end of catch
-//		} // end of finally
-//	}
-
-
-
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
 
 		List<String> stopWords = Utils.readStopWords("stopwords.txt");
-		
-		//MyTest(stopWords);
-		
+
+		//Update anchor, title inverted index
+		Map<String, Integer> df = readDocumentFrequency();
+		InvertedIndexData idxAnchor = computeInvertedIndexAnchor();
+		pushInvertedIndexAnchor(idxAnchor, df);
 		
 		//if(1==1) return;
 		
-		long startTime = System.currentTimeMillis();
-		long endTime1, endTime3;
-		long endTime2 = startTime;
+//		long startTime = System.currentTimeMillis();
+//		long endTime1, endTime3;
+//		long endTime2 = startTime;
+//
+//		Map<String, Integer> df = readDocumentFrequency();
+//
+//		for(int nGram = 1 ; nGram <= 1 ; nGram++)
+//		{
+//			InvertedIndexData idx = computeInvertedIndex(nGram, stopWords, df);
+//			endTime1 = System.currentTimeMillis();
+//
+//			endTime2 = System.currentTimeMillis();
+//			long lTime_for_read = endTime1 - startTime;
+//			long lTime_for_invertedIndex = endTime2 - startTime;
+//			System.out.println("TIME (read) : " + lTime_for_read + "(ms)");
+//			System.out.println("TIME (invertedIndex) : " + lTime_for_invertedIndex + "(ms)");
+//			pushInvertedIndex(idx, nGram);
+//			//printAll(idx);
+//		}
 
-		Map<String, Integer> df = readDocumentFrequency();
-
-		for(int nGram = 1 ; nGram <= 1 ; nGram++)
-		{
-			InvertedIndexData idx = computeInvertedIndex(nGram, stopWords, df);
-			endTime1 = System.currentTimeMillis();
-
-			endTime2 = System.currentTimeMillis();
-			long lTime_for_read = endTime1 - startTime;
-			long lTime_for_invertedIndex = endTime2 - startTime;
-			System.out.println("TIME (read) : " + lTime_for_read + "(ms)");
-			System.out.println("TIME (invertedIndex) : " + lTime_for_invertedIndex + "(ms)");
-			pushInvertedIndex(idx, nGram);
-			//printAll(idx);
-		}
-
-		//		TreeMap<String, Map<Integer, Double>> tfidfMap = computeTfIdf();
-		//		System.out.println("Now updating with tf-idf");
-		//		pushTfIdf(tfidfMap);
-		//		endTime3 = System.currentTimeMillis();
-		//	
-		//	    long lTime_for_tfidf = endTime3 - endTime2;
-		//	    long lTime_for_all = endTime3 = startTime;
-		//	    
-		//	    System.out.println("TIME (tfidf) : " + lTime_for_tfidf + "(ms)");
-		//	    System.out.println("TIME (all) : " + lTime_for_all + "(ms)");	
+	
 
 
 	}

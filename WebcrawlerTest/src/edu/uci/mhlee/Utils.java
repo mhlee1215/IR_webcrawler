@@ -111,6 +111,9 @@ public class Utils {
 		String[] parts2 = pos2.split(",");
 		
 		for(String part1Str : parts1){
+			if(part1Str.isEmpty()) continue;
+			
+			try{
 			int part1Int = Integer.parseInt(part1Str.trim());
 			for(String part2Str : parts2){
 				int part2Int = Integer.parseInt(part2Str.trim());
@@ -121,7 +124,12 @@ public class Utils {
 					else
 						posStr += ","+Integer.toString(part2Int);
 				}
-			}	
+			}
+			}catch(NumberFormatException e){
+				System.err.println(pos1);
+				System.err.println(pos2);
+			}
+			
 		}
 		
 		return posStr;
