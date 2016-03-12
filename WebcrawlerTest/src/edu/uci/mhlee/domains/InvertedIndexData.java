@@ -8,6 +8,8 @@ public class InvertedIndexData {
 	Map<String, Map<Integer, Integer>> DF;
 	Map<String, Map<Integer, Double>> TFIDF;
 	Map<String, Map<Integer, String>> Pos;
+	Map<String, List<Integer>> Anchor;
+	Map<String, List<Integer>> Title;
 	
 	public Map<String, Map<Integer, Integer>> getDF() {
 		return DF;
@@ -33,8 +35,16 @@ public class InvertedIndexData {
 	public void setPos(Map<String, Map<Integer, String>> pos) {
 		Pos = pos;
 	}
-	
-	
-	
-	
+	public Map<String, List<Integer>> getAnchor() {
+		return Anchor;
+	}
+	public void setAnchor(Map<String, List<Integer>> anchor) {
+		Anchor = anchor;
+	}
+	public Map<String, List<Integer>> getTitle() {
+		return Title;
+	}
+	public void setTitle(Map<String, List<Integer>> title) {
+		Title = title;
+	}
 }

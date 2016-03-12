@@ -27,6 +27,7 @@ import edu.uci.ics.crawler4j.robotstxt.RobotstxtServer;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 
+import java.sql.SQLException;
 import java.util.Date;
 
 import org.apache.log4j.Logger;
@@ -49,24 +50,24 @@ public class BasicCrawlController {
      * crawlStorageFolder is a folder where intermediate crawl data is
      * stored.
      */
-    String crawlStorageFolder = "D:/IR_storage";//args[0];
+    String crawlStorageFolder = "/home/mhlee/IR_storage";//args[0];
 
     /*
      * numberOfCrawlers shows the number of concurrent threads that should
      * be initiated for crawling.
      */
-    int numberOfCrawlers = 3;//Integer.parseInt(args[1]);
+    int numberOfCrawlers = 8;//Integer.parseInt(args[1]);
 
     CrawlConfig config = new CrawlConfig();
-
-    config.setUserAgentString("IR W16 WebCrawler 32602237");
+    
+    //config.setUserAgentString("IR W16 WebCrawler 32602237");
     config.setCrawlStorageFolder(crawlStorageFolder);
 
     /*
      * Be polite: Make sure that we don't send more than 1 request per
      * second (1000 milliseconds between requests).
      */
-    config.setPolitenessDelay(300);
+    config.setPolitenessDelay(1000);
 
     /*
      * You can set the maximum crawl depth here. The default value is -1 for
@@ -102,7 +103,7 @@ public class BasicCrawlController {
      * want to start a fresh crawl, you need to delete the contents of
      * rootFolder manually.
      */
-    config.setResumableCrawling(false);
+    config.setResumableCrawling(true);
 
     /*
      * Instantiate the controller for this crawl.
@@ -133,6 +134,18 @@ public class BasicCrawlController {
     long startTime = System.currentTimeMillis();
      
     controller.start(BasicCrawler.class, numberOfCrawlers);
+    
+    try
+	{
+		if(BasicCrawler.connection != null)
+			//BasicCrawler.connection.setAutoCommit(true);
+			BasicCrawler.connection.close();
+	}
+	catch(SQLException e)
+	{
+		// connection close failed.
+		System.err.println(e);
+	}
     
  // End time
     long endTime = System.currentTimeMillis();

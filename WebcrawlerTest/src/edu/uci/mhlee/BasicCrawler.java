@@ -40,12 +40,15 @@ import java.sql.Statement;
  * @author Yasser Ganjisaffar [lastname at gmail dot com]
  */
 public class BasicCrawler extends WebCrawler {
-
+	static Connection connection = null;
 	static PropertyReader pr = null;
 	static {
 		try {
 			pr = new PropertyReader();
 			Class.forName("org.sqlite.JDBC");
+			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
+			//connection.setAutoCommit(false);
+			
 		} catch(Exception e) { e.printStackTrace(); }
 	}
 
@@ -108,6 +111,7 @@ public class BasicCrawler extends WebCrawler {
 			HtmlParseData htmlParseData = (HtmlParseData) page.getParseData();
 			String text = htmlParseData.getText();
 			String html = htmlParseData.getHtml();
+			String title = htmlParseData.getTitle();
 			List<WebURL> links = htmlParseData.getOutgoingUrls();
 
 			logger.debug("Text length: "+ text.length());
@@ -119,6 +123,7 @@ public class BasicCrawler extends WebCrawler {
 			
 			webContent.setText(text);
 			webContent.setHtml(html);
+			webContent.setTitle(title);
 			
 			String[] stParts = Utils.mySplit(text);
 			webContent.setWordcount(stParts.length);
@@ -141,17 +146,12 @@ public class BasicCrawler extends WebCrawler {
 
 	public int write2DB(WebContent content){
 		logger.info("docid:"+content.getDocid()+" added.");
-		Connection connection = null;
+		
 		String insertSQL = null;
 		try
 		{
-			// create a database connection
-			connection = DriverManager.getConnection("jdbc:sqlite:"+pr.getDbPath());
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
-
-			//		      statement.executeUpdate("drop table if exists person");
-			//		      statement.executeUpdate("create table person (id integer, name string)");
 
 			insertSQL = "insert into webContents values("+
 					"null,"+ //auto increment
@@ -166,22 +166,22 @@ public class BasicCrawler extends WebCrawler {
 					""+content.getWordcount()+","+
 					"'"+content.getText()+"',"+
 					"'"+content.getHtml()+"',"+
-					""+content.getOutgoingLink()+""+
+					""+content.getOutgoingLink()+","+
+					"'"+content.getTitle()+"'"+
 					")";
 			
-			
 
-			//System.out.println(insertSQL);
 			statement.executeUpdate(insertSQL);
+			
+			for(WebURL url : content.getLinks()){
+				insertSQL = "insert into webLinks values("+
+						"null,"+
+						content.getDocid()+","+
+						"'"+url.getURL()+"'"+
+						")";
+				statement.executeUpdate(insertSQL);
+			}
 
-			//		      statement.executeUpdate("insert into person values(2, 'yui')");
-			//		      ResultSet rs = statement.executeQuery("select * from person");
-			//		      while(rs.next())
-			//		      {
-			//		        // read the result set
-			//		        System.out.println("name = " + rs.getString("name"));
-			//		        System.out.println("id = " + rs.getInt("id"));
-			//		      }
 		}
 		catch(SQLException e)
 		{
@@ -194,16 +194,16 @@ public class BasicCrawler extends WebCrawler {
 		}
 		finally
 		{
-			try
-			{
-				if(connection != null)
-					connection.close();
-			}
-			catch(SQLException e)
-			{
-				// connection close failed.
-				System.err.println(e);
-			}
+//			try
+//			{
+//				if(connection != null)
+//					connection.close();
+//			}
+//			catch(SQLException e)
+//			{
+//				// connection close failed.
+//				System.err.println(e);
+//			}
 		}
 
 		return 0;
@@ -211,16 +211,16 @@ public class BasicCrawler extends WebCrawler {
 
 	public boolean isAlreadyVisited(WebURL url){
 		boolean isAlreadyVisited = false;
-		Connection connection = null;
 		try
 		{
 			// create a database connection
-			connection = DriverManager.getConnection("jdbc:sqlite:d:/IR_storage/crawlingData.db");
+			
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 			String urlString = url.getURL().toLowerCase();
 			//url.get
 			
+			//System.out.println("select count(*) as cnt from webContents where url = '"+urlString+"'");
 			ResultSet rs = statement.executeQuery("select count(*) as cnt from webContents where url = '"+urlString+"'");
 			while(rs.next())
 			{
@@ -231,6 +231,7 @@ public class BasicCrawler extends WebCrawler {
 					isAlreadyVisited = true;
 				}
 			}
+			//System.out.println("Is already visited?"+isAlreadyVisited);
 		}
 		catch(SQLException e)
 		{
@@ -240,16 +241,16 @@ public class BasicCrawler extends WebCrawler {
 		}
 		finally
 		{
-			try
-			{
-				if(connection != null)
-					connection.close();
-			}
-			catch(SQLException e)
-			{
-				// connection close failed.
-				System.err.println(e);
-			}
+//			try
+//			{
+//				if(connection != null)
+//					connection.close();
+//			}
+//			catch(SQLException e)
+//			{
+//				// connection close failed.
+//				System.err.println(e);
+//			}
 		}
 		
 		return isAlreadyVisited;
