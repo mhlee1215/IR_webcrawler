@@ -173,7 +173,7 @@ public class SearchEngine {
 			int j = 0;
 			NumberFormat formatter = new DecimalFormat("#0.000");     
 			for(Integer key : wordFrequencies.keySet()){
-				//System.out.println(key+"/"+wordFrequencies.get(key));
+				System.out.println(key+"/"+wordFrequencies.get(key));
 
 				String curQuery = "select docid, url, subdomain, path from webContents where docid = "+key;
 				//System.out.println(curQuery);
