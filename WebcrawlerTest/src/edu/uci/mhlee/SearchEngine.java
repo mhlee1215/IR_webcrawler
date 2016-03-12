@@ -1,6 +1,10 @@
 package edu.uci.mhlee;
 
 import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -10,9 +14,15 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Pattern;
+
+import com.google.gson.Gson;
+
+import edu.uci.ics.crawler4j.url.WebURL;
 
 public class SearchEngine {
 	static boolean isDebug = true;
@@ -27,8 +37,8 @@ public class SearchEngine {
 	public static void main(String[] args) {	
 		String query = "Minhaeng";
 		int rankType = 2;
-		double anchorWeight = 5;
-		double titleWeight = 5;
+		double anchorWeight = 50;
+		double titleWeight = 50;
 		double pageRankWeight = 1;
 		double pageRankMax = 9999;
 		double pageRankInit = 0.5;
@@ -47,9 +57,10 @@ public class SearchEngine {
 			
 			
 			while(!"exit".equals(query.toLowerCase())){//query.length() >= 0){
-				Map<Integer, Double> tfidfMap = new HashMap<Integer, Double>();
+				Map<Integer, Double> docScoreMap = new HashMap<Integer, Double>();
 				List<Map<Integer, String>> posMapList = new ArrayList<Map<Integer, String>>();
 				Map<Integer, String> posMap = null;//new HashMap<Integer, String>();
+//				HashSet<Integer> docSet = new HashSet<Integer>();
 				
 				System.out.print("Plase enter query: ");
 				query = keyboard.nextLine();
@@ -82,16 +93,19 @@ public class SearchEngine {
 							tfidf = rs.getDouble("tfidf");
 							pos = rs.getString("pos");
 	
+							// For Cosine Similarity
+							// Get the doc ids that have the query word and add them to the set
+//							docSet.add(docid);
 	
-							if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
+							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
 							//Individual adding
 							if(rankType == 1){
-								tfidfMap.put(docid, tfidfMap.get(docid)+tfidf);	
+								docScoreMap.put(docid, docScoreMap.get(docid)+tfidf);	
 							}else if(rankType == 2){
 								//Just copy only for the first query word
 								if(queryCnt==0){
 									curPosMap.put(docid, pos);
-									tfidfMap.put(docid, tfidfMap.get(docid)+tfidf);	
+									docScoreMap.put(docid, docScoreMap.get(docid)+tfidf);	
 								}
 								//Need to check from second query word
 								else{
@@ -104,14 +118,12 @@ public class SearchEngine {
 											matchedPosCnt = matchedPos.split(",").length;
 	
 						
-										tfidfMap.put(docid, tfidfMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
+										docScoreMap.put(docid, docScoreMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
 	
 										//log(1+matchedPosCnt)+1
 									}
 								}
 							}
-	
-	
 	
 						}
 	
@@ -132,9 +144,9 @@ public class SearchEngine {
 							docid = rs.getInt("docid");
 							df = rs.getInt("df");
 							
-							if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
-							double curScore = tfidfMap.get(docid);
-							tfidfMap.put(docid, curScore+anchorWeight/df);
+							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
+							double curScore = docScoreMap.get(docid);
+							docScoreMap.put(docid, curScore+anchorWeight/df);
 						}
 					}
 					
@@ -150,28 +162,60 @@ public class SearchEngine {
 							docid = rs.getInt("docid");
 							df = rs.getInt("df");
 							
-							if(tfidfMap.get(docid) == null) tfidfMap.put(docid, 0.0);
-							double curScore = tfidfMap.get(docid);
-							tfidfMap.put(docid, curScore+titleWeight/df);
+							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
+							double curScore = docScoreMap.get(docid);
+							docScoreMap.put(docid, curScore+titleWeight/df);
 						}
 					}
-					
 					
 					queryCnt++;
 				}
 				
-				//add pageRank Concept
-				for(Integer curDocid : tfidfMap.keySet()){
-					Double curScore = tfidfMap.get(curDocid);
+				
+				// Add pageRank Concept
+				for(Integer curDocid : docScoreMap.keySet()){
+					Double curScore = docScoreMap.get(curDocid);
 					Double pVal = pRank.get(curDocid);
 					if(pVal == null) pVal = pageRankInit;
 					
-					tfidfMap.put(curDocid, curScore + pageRankWeight*Math.min(pVal, pageRankMax));
+					docScoreMap.put(curDocid, curScore + pageRankWeight*Math.min(pVal, pageRankMax));
 				}
 				
 				
-				tfidfMap = Utils.sortByValueDouble(tfidfMap);
-				print(tfidfMap);
+			
+				docScoreMap = Utils.sortByValueDouble(docScoreMap);
+				
+				
+				// Print 
+				print(docScoreMap);
+			
+
+				// Calculate NDCG Score
+				{
+					// Get GoogleList
+					ArrayList<String> googleList = getTopURLsFromGoogle(query);
+					
+					// Get GobuciList
+					ArrayList<String> gobuciList = new ArrayList<String>();
+					for(Integer key : docScoreMap.keySet())
+					{
+						String curQuery = "select url from webContents where docid = "+key;
+						ResultSet rs = statement.executeQuery(curQuery);
+						String url;
+						int cnt = 0;
+						while (rs.next())
+						{
+							url = rs.getString("url");
+							gobuciList.add(url);
+							if (cnt == 5) break;
+						}
+					}
+					
+					double NDCG5 = computeNDCG5(googleList, gobuciList);
+					// Print NDCG@5 Score
+					System.out.println("\nNDCG@5: "+NDCG5);
+				}
+					
 			}
 
 			System.out.println("\n");
@@ -196,12 +240,118 @@ public class SearchEngine {
 			}
 		}
 
-				
-
-
 	}
 
+	
+	
+	/**
+	 * Relevance scores have the scale 1 to 5.
+	 * @param googleList
+	 * @param gobuciList
+	 * @return
+	 */
+	public static double computeNDCG5(ArrayList<String> googleList, ArrayList<String> gobuciList)
+	{
+		double IDCG = 12.3234658; // Ideal value. When perfectly aligned.
+		if (googleList.size() == 4)
+			IDCG = 11.892789;
+		else if (googleList.size() == 3)
+			IDCG = 10.892789;
+		else if (googleList.size() == 2)
+			IDCG = 9.0;
+		
+		double[] DC = new double[5];
+			
+		double DCG = 0.0;
+		double rel;
+		
+//		for (int i = 0; i < gobuciList.size(); i++) {
+		for (int i = 0; i < 5; i++) {
+			for (int j = 0; j < googleList.size(); j++) {
+				String pStr = gobuciList.get(i).substring(gobuciList.get(i).indexOf("/"));
+				String gStr = googleList.get(j).substring(googleList.get(j).indexOf("/"));
+				
+				if(pStr.substring(pStr.lastIndexOf("/")).contains("index"))
+					pStr = pStr.substring(pStr.indexOf("/"), pStr.lastIndexOf("/"));
+				else if(pStr.substring(pStr.length()-1).equals("/"))
+					pStr = pStr.substring(pStr.indexOf("/"), pStr.length()-1);
+				
+				if(gStr.substring(gStr.lastIndexOf("/")).contains("index"))
+					gStr = gStr.substring(gStr.indexOf("/"), gStr.lastIndexOf("/"));
+				else if(gStr.substring(gStr.length()-1).equals("/"))
+					gStr = gStr.substring(gStr.indexOf("/"), gStr.length()-1);
+				
+				
+				// If the two URLs match -> Add DCG value
+				if( pStr.equals(gStr) ) 
+				{
+//					System.out.println("i:"+i+", j:"+j);
+					double denom = log2(i+1);
+					if(denom == 0)
+						denom = 1;
+					rel = 5-j;
+					DC[i] = rel/denom;
+					DCG += DC[i];
+					break;
+				}
+			}
+		}
+		
+		double NDCG = (DCG / IDCG);
+		return NDCG;
+	}
+	
+	public static double log2(double d) {
+		return (double) (Math.log(d) / Math.log(2.0));
+	}
+	
 
+	/**
+	 * @param query
+	 * @return ArrayList<String> : List of top urls from google
+	 */
+	public static ArrayList<String> getTopURLsFromGoogle(String query)
+	{
+		ArrayList<String> googleList = new ArrayList<String>();
+		
+		String google = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&start=0&rsz=8&q=";
+	    String search = "site:ics.uci.edu";
+	    String charset = "UTF-8";
+	    
+	    // We are going to consider the results without the following extensions.
+	    final Pattern BINARY_FILES_EXTENSIONS =
+				Pattern.compile(".*\\.(bmp|gif|jpe?g|png|tiff?|pdf|ico|xaml|pict|rif|pptx?|ps" +
+						"|mid|mp2|mp3|mp4|wav|wma|au|aiff|flac|ogg|3gp|aac|amr|au|vox" +
+						"|avi|mov|mpe?g|ra?m|m4v|smil|wm?v|swf|aaf|asf|flv|mkv" +
+						"|zip|rar|gz|7z|aac|ace|alz|apk|arc|arj|dmg|jar|lzip|lha)" +
+						"(\\?.*)?$"); // For url Query parts ( URL?q=... )
+	    try
+	    {
+	    	String strUrl;
+	    	URL url = new URL(google + URLEncoder.encode(search+" "+query, charset));
+		    Reader reader = new InputStreamReader(url.openStream(), charset);
+		    GoogleResults results = new Gson().fromJson(reader, GoogleResults.class);
+		    int size = results.getResponseData().getResults().size();
+		    for(int i = 0; i < size; i++)
+		    {
+		    	strUrl = results.getResponseData().getResults().get(i).getUrl();
+		    	if (!BINARY_FILES_EXTENSIONS.matcher(strUrl).matches())
+		    		googleList.add(strUrl);
+	    		if (googleList.size() == 5) break;
+		    }
+		    	
+//		    System.out.println(googleList);
+	    }
+	    catch(Exception e)
+	    {
+	    	e.printStackTrace();
+	    }
+	    
+	    return googleList;
+	}
+
+	
+	
 
 	/**
 	 * Print document information from input map
