@@ -252,6 +252,7 @@ public class SearchEngine {
 	 */
 	public static double computeNDCG5(ArrayList<String> googleList, ArrayList<String> gobuciList)
 	{
+		
 		double IDCG = 12.3234658; // Ideal value. When perfectly aligned.
 		if (googleList.size() == 4)
 			IDCG = 11.892789;
@@ -265,8 +266,7 @@ public class SearchEngine {
 		double DCG = 0.0;
 		double rel;
 		
-//		for (int i = 0; i < gobuciList.size(); i++) {
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < Math.min(5, gobuciList.size()); i++) {
 			for (int j = 0; j < googleList.size(); j++) {
 				String pStr = gobuciList.get(i).substring(gobuciList.get(i).indexOf("/"));
 				String gStr = googleList.get(j).substring(googleList.get(j).indexOf("/"));
