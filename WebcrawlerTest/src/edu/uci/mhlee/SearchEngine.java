@@ -37,8 +37,14 @@ public class SearchEngine {
 	public static void main(String[] args) {	
 		String query = "Minhaeng";
 		int rankType = 2;
-		double anchorWeight = 50;
-		double titleWeight = 50;
+//		double anchorWeight = 50;
+//		double titleWeight = 100000;
+//		double pageRankWeight = 1;
+//		double pageRankMax = 9999;
+//		double pageRankInit = 0.5;
+		
+		double anchorWeight = 100;
+		double titleWeight = 100;
 		double pageRankWeight = 1;
 		double pageRankMax = 9999;
 		double pageRankInit = 0.5;
@@ -75,11 +81,17 @@ public class SearchEngine {
 				for(String queryWord : queryParts){
 					Map<Integer, String> curPosMap = new HashMap<Integer, String>();
 					
+					
+					String extra = "";
+					if (queryWord.matches(".*s$"))
+						extra = " or word = '" + queryWord.replaceAll("s$", "") + "'";
+						
+					
 					// First load DFs into dfMap
 
 					{
 						//Based on text content
-						String curQuery = "select docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'";
+						String curQuery = "select docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'"+ " or word = '" + capitalize(queryWord) + "'" + extra;
 						//System.out.println(curQuery);
 						ResultSet rs = statement.executeQuery(curQuery);
 	
@@ -134,7 +146,7 @@ public class SearchEngine {
 					
 					{
 						//Add Anchor weight
-						String curQuery = "select docid, df from invertedIndexAnchor where type = 'anchor' and word = '"+queryWord+"'";
+						String curQuery = "select docid, df from invertedIndexAnchor where type = 'anchor' and word = '"+queryWord+"'"+ " or word = '" + capitalize(queryWord) + "'" + extra;
 						//System.out.println(curQuery);
 						ResultSet rs = statement.executeQuery(curQuery);
 						while (rs.next())
@@ -146,13 +158,14 @@ public class SearchEngine {
 							
 							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
 							double curScore = docScoreMap.get(docid);
-							docScoreMap.put(docid, curScore+anchorWeight/df);
+//							docScoreMap.put(docid, curScore+anchorWeight/df);
+							docScoreMap.put(docid, curScore+anchorWeight);
 						}
 					}
 					
 					{
 						//Add Title weight
-						String curQuery = "select docid, df from invertedIndexAnchor where type = 'title' and word = '"+queryWord+"'";
+						String curQuery = "select docid, df from invertedIndexAnchor where type = 'title' and word = '"+queryWord+"'"+ " or word = '" + capitalize(queryWord) + "'" + extra;
 						//System.out.println(curQuery);
 						ResultSet rs = statement.executeQuery(curQuery);
 						while (rs.next())
@@ -164,7 +177,8 @@ public class SearchEngine {
 							
 							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
 							double curScore = docScoreMap.get(docid);
-							docScoreMap.put(docid, curScore+titleWeight/df);
+//							docScoreMap.put(docid, curScore+titleWeight/df);
+							docScoreMap.put(docid, curScore+titleWeight);
 						}
 					}
 					
@@ -242,7 +256,11 @@ public class SearchEngine {
 
 	}
 
+
 	
+	private static String capitalize(final String line) {
+		   return Character.toUpperCase(line.charAt(0)) + line.substring(1);
+		}
 	
 	/**
 	 * Relevance scores have the scale 1 to 5.
@@ -367,8 +385,6 @@ public class SearchEngine {
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-
-
 			//while(query.length() >= 0){
 			//query = keyboard.nextLine();
 
@@ -398,20 +414,12 @@ public class SearchEngine {
 					System.out.println("Rank<"+(j+1)+"> Score:"+formatter.format(wordFrequencies.get(key))+"\tDocID: "+docid+"\tTitle: "+title+"\tURL: "+url+"\tSubDomain: "+subdomain+"\tPath:"+path);
 					
 				}
-				
-
-
+			
 				j++;
 				if(j > 9) break;
 			}
+			
 			System.out.println("");
-
-
-
-
-
-
-
 		}
 		catch(SQLException e)
 		{
@@ -435,8 +443,6 @@ public class SearchEngine {
 
 
 	}
-
-
 
 
 }
