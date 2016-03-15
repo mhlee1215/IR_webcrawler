@@ -1,0 +1,5 @@
+http://ccsw.ics.uci.edu/15/
+https://www.ics.uci.edu/faculty/area/area_security.php
+https://www.ics.uci.edu/computing/linux/security.php
+http://www.ics.uci.edu/~projects/DataGuard/javadoc/org/itr_rescue/dataGuard/encryption/Security.html
+http://sconce.ics.uci.edu/

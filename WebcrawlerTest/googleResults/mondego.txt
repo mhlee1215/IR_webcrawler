@@ -1,0 +1,5 @@
+http://mondego.ics.uci.edu/
+http://nile.ics.uci.edu:9000/wifi
+http://nile.ics.uci.edu:9000/wifi/user/account/
+http://mondego.ics.uci.edu/projects/clonedetection/
+http://www.ics.uci.edu/~lopes/

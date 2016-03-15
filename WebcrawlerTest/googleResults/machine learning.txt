@@ -1,0 +1,5 @@
+http://archive.ics.uci.edu/ml/
+https://archive.ics.uci.edu/ml/datasets.html
+http://mlearn.ics.uci.edu/MLRepository.html
+https://archive.ics.uci.edu/ml/machine-learning-databases/
+https://archive.ics.uci.edu/ml/datasets.html%3Fformat%3D%26task%3Dreg%26att%3D%26area%3D%26numAtt%3D%26numIns%3D%26type%3D%26sort%3DnameUp%26view%3Dtable

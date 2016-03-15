@@ -1,0 +1,5 @@
+http://www.ics.uci.edu/grad/courses/
+http://www.ics.uci.edu/grad/courses/details.php%3Fid%3D59
+https://www.ics.uci.edu/grad/courses/details.php%3Fid%3D69
+https://www.ics.uci.edu/grad/degrees/degree_cs.php
+https://www.ics.uci.edu/grad/courses/listing.php%3Fyear%3D2015%26level%3DALL%26department%3DECE%26program%3DALL

@@ -1,0 +1,5 @@
+https://www.ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm
+https://www.ics.uci.edu/~fielding/pubs/dissertation/top.htm
+https://www.ics.uci.edu/~fielding/pubs/dissertation/introduction.htm
+https://www.ics.uci.edu/~fielding/pubs/dissertation/abstract.htm
+http://www.ics.uci.edu/~fielding/talks/webarch_9805/
