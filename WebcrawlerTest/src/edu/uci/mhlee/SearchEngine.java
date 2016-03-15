@@ -1,7 +1,10 @@
 package edu.uci.mhlee;
 
 import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.io.Reader;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -23,25 +26,87 @@ import java.util.regex.Pattern;
 import com.google.gson.Gson;
 
 import edu.uci.ics.crawler4j.url.WebURL;
+import edu.uci.mhlee.domains.SearchParams;
+import tunning.TunningParams;
 
 public class SearchEngine {
+	static Map<Integer, Double> pRank;
+	static Map<String, Integer> dfMap;
 	static boolean isDebug = true;
 	static PropertyReader pr = null;
 	static {
 		try {
+			pRank = PageRank.readPageRank();
+			dfMap = InvertedTable.readDocumentFrequency();
+			
 			pr = new PropertyReader();
 			Class.forName("org.sqlite.JDBC");
 		} catch(Exception e) { e.printStackTrace(); }
 	}
 
-	public static void main(String[] args) {	
-		String query = "Minhaeng";
+	public static void main(String[] args) {
+		
+//		String query11 = "information retrieval";
+		
+//		PrintWriter fw;
+//		try {
+//			ArrayList<String> results = getTopURLsFromGoogle(query11);
+//			fw = new PrintWriter(new FileWriter("googleResults/"+query11+".txt"));
+//			for(String r : results){
+//				System.out.println(r);
+//				fw.println(r);
+//			}
+//			fw.flush();
+//			fw.close();
+//		} catch (IOException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
+//		
+//		if(1==1) return;
+		
+		String query = "";
 		int rankType = 2;
-		double anchorWeight = 50;
-		double titleWeight = 50;
-		double pageRankWeight = 1;
-		double pageRankMax = 9999;
-		double pageRankInit = 0.5;
+//		double anchorWeight = 100000;
+//		double titleWeight = 10000;
+//		double pageRankWeight = 300;
+//		double pageRankMax = 5;
+//		double pageRankInit = 0.5;
+		
+		//0.318
+//		double anchorWeight = 500;
+//		double titleWeight = 500;
+//		double pageRankWeight = 20;
+//		double pageRankMax = 10;
+//		double pageRankInit = 0.5;
+		
+		//0.33
+//		double anchorWeight = 100000;
+//		double titleWeight = 1000;
+//		double pageRankWeight = 30;
+//		double pageRankMax = 5;
+//		double pageRankInit = 0.5;
+		
+		//0.369!
+//		double anchorWeight = 1000;
+//		double titleWeight = 50000;
+//		double pageRankWeight = 800;
+//		double pageRankMax = 8;
+//		double pageRankInit = 0.001;
+		
+		//0.37
+//		double anchorWeight = 1000;
+//		double titleWeight = 50000;
+//		double pageRankWeight = 2000;
+//		double pageRankMax = 8;
+//		double pageRankInit = 0.001;
+		
+		//0.385
+		double anchorWeight = 1000;
+		double titleWeight = 50000;
+		double pageRankWeight = 7000;
+		double pageRankMax = 8;
+		double pageRankInit = 0.001;
 
 		Connection connection = null;
 		try
@@ -51,143 +116,19 @@ public class SearchEngine {
 			Statement statement = connection.createStatement();
 			statement.setQueryTimeout(30);  // set timeout to 30 sec.
 
-			Map<Integer, Double> pRank = PageRank.readPageRank();
+			pRank = PageRank.readPageRank();
 			
 			Scanner keyboard = new Scanner(System.in);
-			
-			
-			while(!"exit".equals(query.toLowerCase())){//query.length() >= 0){
-				Map<Integer, Double> docScoreMap = new HashMap<Integer, Double>();
-				List<Map<Integer, String>> posMapList = new ArrayList<Map<Integer, String>>();
-				Map<Integer, String> posMap = null;//new HashMap<Integer, String>();
-//				HashSet<Integer> docSet = new HashSet<Integer>();
-				
-				System.out.print("Plase enter query: ");
-				query = keyboard.nextLine();
-				String[] queryParts = query.split(" ");
-
-				//String word;
-				int tf, df, docid;
-				double tfidf;
-				String pos;
-
-				int queryCnt = 0;
-				for(String queryWord : queryParts){
-					Map<Integer, String> curPosMap = new HashMap<Integer, String>();
-					
-					// First load DFs into dfMap
-
-					{
-						//Based on text content
-						String curQuery = "select docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'";
-						//System.out.println(curQuery);
-						ResultSet rs = statement.executeQuery(curQuery);
-	
-						while (rs.next())
-						{
-							// read the result set
-							//word = rs.getString("word");
-							docid = rs.getInt("docid");
-							tf = rs.getInt("tf");
-							df = rs.getInt("df");
-							tfidf = rs.getDouble("tfidf");
-							pos = rs.getString("pos");
-	
-							// For Cosine Similarity
-							// Get the doc ids that have the query word and add them to the set
-//							docSet.add(docid);
-	
-							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
-							//Individual adding
-							if(rankType == 1){
-								docScoreMap.put(docid, docScoreMap.get(docid)+tfidf);	
-							}else if(rankType == 2){
-								//Just copy only for the first query word
-								if(queryCnt==0){
-									curPosMap.put(docid, pos);
-									docScoreMap.put(docid, docScoreMap.get(docid)+tfidf);	
-								}
-								//Need to check from second query word
-								else{
-									//Co-occurrence
-									if(posMap.get(docid) != null){
-										String matchedPos = Utils.neighborPosString(posMap.get(docid), pos, 1);
-										curPosMap.put(docid, matchedPos);
-										int matchedPosCnt = 0;
-										if(matchedPos.length() > 0)
-											matchedPosCnt = matchedPos.split(",").length;
-	
-						
-										docScoreMap.put(docid, docScoreMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
-	
-										//log(1+matchedPosCnt)+1
-									}
-								}
-							}
-	
-						}
-	
-						posMap = curPosMap;
-						posMapList.add(posMap);
-					}
-					
-					
-					{
-						//Add Anchor weight
-						String curQuery = "select docid, df from invertedIndexAnchor where type = 'anchor' and word = '"+queryWord+"'";
-						//System.out.println(curQuery);
-						ResultSet rs = statement.executeQuery(curQuery);
-						while (rs.next())
-						{
-							// read the result set
-							//word = rs.getString("word");
-							docid = rs.getInt("docid");
-							df = rs.getInt("df");
-							
-							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
-							double curScore = docScoreMap.get(docid);
-							docScoreMap.put(docid, curScore+anchorWeight/df);
-						}
-					}
-					
-					{
-						//Add Title weight
-						String curQuery = "select docid, df from invertedIndexAnchor where type = 'title' and word = '"+queryWord+"'";
-						//System.out.println(curQuery);
-						ResultSet rs = statement.executeQuery(curQuery);
-						while (rs.next())
-						{
-							// read the result set
-							//word = rs.getString("word");
-							docid = rs.getInt("docid");
-							df = rs.getInt("df");
-							
-							if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
-							double curScore = docScoreMap.get(docid);
-							docScoreMap.put(docid, curScore+titleWeight/df);
-						}
-					}
-					
-					queryCnt++;
-				}
-				
-				
-				// Add pageRank Concept
-				for(Integer curDocid : docScoreMap.keySet()){
-					Double curScore = docScoreMap.get(curDocid);
-					Double pVal = pRank.get(curDocid);
-					if(pVal == null) pVal = pageRankInit;
-					
-					docScoreMap.put(curDocid, curScore + pageRankWeight*Math.min(pVal, pageRankMax));
-				}
-				
-				
-			
-				docScoreMap = Utils.sortByValueDouble(docScoreMap);
-				
-				
+			double meanNDCG5 = 0;
+			for(String query1 : TunningParams.queries){
+			//while(!"exit".equals(query.toLowerCase())){//query.length() >= 0){
+				/////////////
+				SearchParams params = new SearchParams(anchorWeight, titleWeight, pageRankWeight, pageRankMax, pageRankInit);
+				//System.out.print("Search Query :");
+				query = query1;//keyboard.nextLine();
+				Map<Integer, Double> docScoreMap = getQueryResult(query, statement, rankType, params);
 				// Print 
-				print(docScoreMap);
+				//print(docScoreMap);
 			
 
 				// Calculate NDCG Score
@@ -197,28 +138,32 @@ public class SearchEngine {
 					
 					// Get GobuciList
 					ArrayList<String> gobuciList = new ArrayList<String>();
+					int cnt = 0;
 					for(Integer key : docScoreMap.keySet())
 					{
 						String curQuery = "select url from webContents where docid = "+key;
 						ResultSet rs = statement.executeQuery(curQuery);
 						String url;
-						int cnt = 0;
+						
 						while (rs.next())
 						{
 							url = rs.getString("url");
 							gobuciList.add(url);
-							if (cnt == 5) break;
+							
 						}
+						cnt++;
+						if (cnt == 5) break;
 					}
-					
 					double NDCG5 = computeNDCG5(googleList, gobuciList);
 					// Print NDCG@5 Score
-					System.out.println("\nNDCG@5: "+NDCG5);
+					System.out.println("Query:"+query+",\t\t\tNDCG@5: "+NDCG5);
+					meanNDCG5 += NDCG5;
 				}
 					
 			}
 
-			System.out.println("\n");
+			
+			System.out.println("mean NDCG5: "+(meanNDCG5/TunningParams.queries.size())+"\n");
 		}
 		catch(SQLException e)
 		{
@@ -239,10 +184,145 @@ public class SearchEngine {
 				System.err.println(e);
 			}
 		}
-
 	}
 
+	public static Map<Integer, Double>  getQueryResult(String query, Statement statement, int rankType, SearchParams params) throws SQLException{
+		Map<Integer, Double> docScoreMap = new HashMap<Integer, Double>();
+		List<Map<Integer, String>> posMapList = new ArrayList<Map<Integer, String>>();
+		Map<Integer, String> posMap = null;//new HashMap<Integer, String>();
+//		HashSet<Integer> docSet = new HashSet<Integer>();
+		
+		//System.out.print("Plase enter query: ");
+		//query = keyboard.nextLine();
+		String[] queryParts = query.split(" ");
+
+		//String word;
+		int tf, df, docid;
+		double tfidf;
+		String pos;
+
+		int queryCnt = 0;
+		for(String queryWord : queryParts){
+			Map<Integer, String> curPosMap = new HashMap<Integer, String>();
+			
+			String extra = "";
+			if (queryWord.matches(".*s$"))
+				extra = " or word = '" + queryWord.replaceAll("s$", "") + "'";
+			
+			// First load DFs into dfMap
+
+			{
+				//Based on text content
+				String curQuery = "select docid, tf, df, tfidf, pos from invertedIndex where word = '"+queryWord+"'"+ " or word = '" + capitalize(queryWord) + "'" + extra;
+				//System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+
+				while (rs.next())
+				{
+					// read the result set
+					//word = rs.getString("word");
+					docid = rs.getInt("docid");
+					tf = rs.getInt("tf");
+					df = rs.getInt("df");
+					tfidf = rs.getDouble("tfidf");
+					pos = rs.getString("pos");
+
+					// For Cosine Similarity
+					// Get the doc ids that have the query word and add them to the set
+//					docSet.add(docid);
+
+					if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
+					//Individual adding
+					if(rankType == 1){
+						docScoreMap.put(docid, docScoreMap.get(docid)+tfidf);	
+					}else if(rankType == 2){
+						//Just copy only for the first query word
+						if(queryCnt==0){
+							curPosMap.put(docid, pos);
+							docScoreMap.put(docid, docScoreMap.get(docid)+tfidf);	
+						}
+						//Need to check from second query word
+						else{
+							//Co-occurrence
+							if(posMap.get(docid) != null){
+								String matchedPos = Utils.neighborPosString(posMap.get(docid), pos, 1);
+								curPosMap.put(docid, matchedPos);
+								int matchedPosCnt = 0;
+								if(matchedPos.length() > 0)
+									matchedPosCnt = matchedPos.split(",").length;
+
+				
+								docScoreMap.put(docid, docScoreMap.get(docid)+tfidf*(Math.log(1+matchedPosCnt)+1));
+
+								//log(1+matchedPosCnt)+1
+							}
+						}
+					}
+
+				}
+
+				posMap = curPosMap;
+				posMapList.add(posMap);
+			}
+			
+			// Print 
+//			docScoreMap = Utils.sortByValueDouble(docScoreMap);
+//			print(docScoreMap);
+			
+			{
+				//Add Anchor weight
+				String curQuery = "select docid, df from invertedIndexAnchor where type = 'anchor' and word = '"+queryWord+"'"+ " or word = '" + capitalize(queryWord) + "'" + extra;
+				//System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+				while (rs.next())
+				{
+					// read the result set
+					//word = rs.getString("word");
+					docid = rs.getInt("docid");
+					df = rs.getInt("df");
+					
+					if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
+					double curScore = docScoreMap.get(docid);
+					docScoreMap.put(docid, curScore+params.getAnchorWeight());
+				}
+			}
+			
+			{
+				//Add Title weight
+				String curQuery = "select docid, df from invertedIndexAnchor where type = 'title' and word = '"+queryWord+"'"+ " or word = '" + capitalize(queryWord) + "'" + extra;
+				//System.out.println(curQuery);
+				ResultSet rs = statement.executeQuery(curQuery);
+				while (rs.next())
+				{
+					// read the result set
+					//word = rs.getString("word");
+					docid = rs.getInt("docid");
+					df = rs.getInt("df");
+					
+					if(docScoreMap.get(docid) == null) docScoreMap.put(docid, 0.0);
+					double curScore = docScoreMap.get(docid);
+					docScoreMap.put(docid, curScore+params.getTitleWeight());
+				}
+			}
+			
+			queryCnt++;
+		}
+		
+		
+		// Add pageRank Concept
+		for(Integer curDocid : docScoreMap.keySet()){
+			Double curScore = docScoreMap.get(curDocid);
+			Double pVal = pRank.get(curDocid);
+			if(pVal == null) pVal = params.getPageRankInit();
+			
+			docScoreMap.put(curDocid, curScore + params.getPageRankWeight()*Math.min(pVal, params.getPageRankMax()));
+		}
+		
+		
 	
+		docScoreMap = Utils.sortByValueDouble(docScoreMap);
+		return docScoreMap;
+	}
 	
 	/**
 	 * Relevance scores have the scale 1 to 5.
@@ -312,7 +392,9 @@ public class SearchEngine {
 	 */
 	public static ArrayList<String> getTopURLsFromGoogle(String query)
 	{
-		ArrayList<String> googleList = new ArrayList<String>();
+		ArrayList<String> googleList = Utils.readGoogleResults(query); 
+		if(googleList != null) return googleList;
+		googleList = new ArrayList<String>();
 		
 		String google = "http://ajax.googleapis.com/ajax/services/search/web?v=1.0&start=0&rsz=8&q=";
 	    String search = "site:ics.uci.edu";
@@ -329,6 +411,7 @@ public class SearchEngine {
 	    {
 	    	String strUrl;
 	    	URL url = new URL(google + URLEncoder.encode(search+" "+query, charset));
+	    	System.out.println(url);;
 		    Reader reader = new InputStreamReader(url.openStream(), charset);
 		    GoogleResults results = new Gson().fromJson(reader, GoogleResults.class);
 		    int size = results.getResponseData().getResults().size();
@@ -434,6 +517,10 @@ public class SearchEngine {
 		}
 
 
+	}
+	
+	private static String capitalize(final String line) {
+	   return Character.toUpperCase(line.charAt(0)) + line.substring(1);
 	}
 
 

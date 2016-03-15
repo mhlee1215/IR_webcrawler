@@ -90,6 +90,27 @@ public class Utils {
 		return stopWords;
 	}
 	
+	public static ArrayList<String> readGoogleResults(String query){
+		ArrayList<String> results = null;
+
+		String currentLine = null;
+		try{
+			FileReader fr = new FileReader("googleResults/"+query+".txt");
+			BufferedReader br = new BufferedReader(fr);
+			int j = 0;
+			results = new ArrayList<String>();
+			while((currentLine = br.readLine()) != null){
+				if(currentLine.trim().length() >0)
+					results.add(currentLine.trim());
+			}
+			br.close();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+
+		return results;
+	}
+	
 	public static String[] mySplit(String text){
 		//return text.trim().toLowerCase().split("[^a-z']");
 		return text.trim().split("[^a-zA-Z']");
@@ -102,6 +123,33 @@ public class Utils {
 	
 	public static double computeTFIDF(int tf, int N, int df){
 		return ( 1 + Math.log(tf) ) * Math.log( (double)N / df );
+	}
+	
+	public static double computeCosineSimilarity(Map<String, Double> src1, Map<String, Double> src2){
+		double cosineSimilarity = 0.0;
+		double srcSum1 = 0.0;
+		double srcSum2 = 0.0;
+		
+		
+		for(String word : src1.keySet()){
+			srcSum1+=src1.get(word);
+			
+			Double src1_w = src1.get(word);
+			if(src1_w == null) src1_w = 0.0;
+			Double src2_w = src2.get(word);
+			if(src2_w == null) src2_w = 0.0;
+			
+			cosineSimilarity += src1_w*src2_w;
+		}
+		
+		for(String word : src2.keySet()){
+			srcSum1+=src1.get(word);
+		}
+		
+		cosineSimilarity = cosineSimilarity / (srcSum1*srcSum2);
+		
+		
+		return cosineSimilarity;
 	}
 	
 	public static String neighborPosString(String pos1, String pos2, int gap){
