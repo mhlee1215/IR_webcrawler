@@ -86,7 +86,7 @@ public class SearchEngine {
 //		double pageRankWeight = 30;
 //		double pageRankMax = 5;
 //		double pageRankInit = 0.5;
-		
+		 
 		//0.369!
 //		double anchorWeight = 1000;
 //		double titleWeight = 50000;
